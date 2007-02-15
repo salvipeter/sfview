@@ -1,0 +1,10 @@
+			-*- mode: outline -*-
+
+* RBN file format
+** multiple surfaces in one file
+** Surface parent class -> NURBS, mesh
+** display as a virtual function
+** `type' tag -> points/wireframe for meshes, control net for nurbs
+** `high density' point number for nurbs
+* Gauss/mean histograms
+* speed-up

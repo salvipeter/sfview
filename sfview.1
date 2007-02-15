@@ -1,0 +1,84 @@
+.TH "sfview" 1 "February 2007" sfview "User Commands"
+.SH NAME
+sfview \- surface file viewer
+.SH SYNOPSIS
+.B sfview
+.RI [ OPTION "]\&... " FILE " [" FILE ]\&...
+.SH DESCRIPTION
+Loads the file(s) designated in the command line, displaying their
+contents in one common window. It recognizes the PTS an RBN file
+formats.
+.TP
+.BI "\-d, \-\-density=" NUMBER
+Sampling density of RBN files. It represents the average number of
+sampled points between two control points. 30 by default.
+.TP
+.BI "\-g, \-\-geometry=" WIDTHxHEIGHT
+Geometry of the window at startup. 800x600 by default.
+.TP
+.B \-h, \-\-help
+Print help information and exit.
+.TP
+.BI "\-q, \-\-quads=" NUMBER
+Maximum number of quads in low-density mode. 2500 by default.
+.TP
+.B \-v, \-\-version
+Print version information and exit.
+.PP
+The view can be manipulated by dragging the mouse
+(LMB: rotation, RMB: zoom, MMB: pan).
+There are also several keyboard commands for changing the view of one
+surface. All of them can be prepended by the number of the surface (1-9),
+otherwise they work on the last used surface. `0' means the following
+command(s) act on every surface - which is the default when the
+program starts up.
+.TP
+.B c
+Toggles the control net (for RBN files).
+.TP
+.B g
+Changes the visualization of the surface to Gauss map.
+.TP
+.B h
+Shows/hides the surface.
+.TP
+.B i
+Changes the visualization of the surface to isophote map.
+.TP
+.B l
+Changes the visualization of the surface to slicing map.
+.TP
+.B m
+Changes the visualization of the surface to mean map.
+.TP
+.B n
+Changes the visualization of the surface to no map (only shading).
+.TP
+.B p
+Changes the visualization of the surface to points (for PTS files).
+.TP
+.B w
+Changes the visualization of the surface to wireframe (for PTS files).
+.TP
+.B r
+Reloads the surface.
+.TP
+.B +
+Increases the density of the surface's isophote/slicing lines.
+.TP
+.B -
+Decreases the density of the surface's isophote/slicing lines.
+.PP
+Other useful commands:
+.TP
+.B d
+Toggles high-density view. The surfaces are always displayed in
+low-density while moving.
+.TP
+.B s
+Saves the actual view to a file named sfview-<pid>-<#>.ppm.
+.TP
+.B q
+Quits the program.
+.SH AUTHOR
+Peter Salvi <vukung@yahoo.com>
