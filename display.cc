@@ -120,6 +120,8 @@ void init()
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_COLOR_MATERIAL);
 
+  glClearColor(0.7, 0.7, 0.7, 1.0);
+
   Box b = surfaces.front()->boundingBox();
   for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
     b = boxUnion(b, (*i)->boundingBox());

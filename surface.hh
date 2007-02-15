@@ -26,7 +26,7 @@ public:
 
   virtual void increaseDensity() = 0;
   virtual void decreaseDensity() = 0;
-  virtual void display() const = 0;
+  virtual void display() = 0;
 protected:
   std::string filename;
   size_t resx, resy;

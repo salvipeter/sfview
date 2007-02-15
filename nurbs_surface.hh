@@ -7,6 +7,8 @@
 #ifndef NURBS_SURFACE_HH
 #define NURBS_SURFACE_HH
 
+#include <GL/glut.h>
+
 #include "surface.hh"
 
 class NurbsSurface : public Surface {
@@ -21,12 +23,17 @@ public:
 
   void increaseDensity();
   void decreaseDensity();
-  void display() const;
+  void display();
 private:
+  void findOpenParen(std::ifstream &in) const;
+  bool isCloseParen(std::ifstream &in) const;
+
   int degree_u, degree_v;
-  ValueVector knots_u, knots_v;
+  std::vector<float> knots_u, knots_v, linear_cpts;
+  int nu, nv;
   PointVector control_net;
   bool show_control_net;
+  GLUnurbsObj *globj;
 };
 
 #endif // NURBS_SURFACE_HH

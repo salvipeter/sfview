@@ -147,7 +147,7 @@ void MeshSurface::decreaseDensity()
   }
 }
 
-void MeshSurface::display() const
+void MeshSurface::display()
 {    
   size_t dec_incr = (mouse_mode == NOTHING && high_density) ? 1 : decimation;
 

@@ -18,7 +18,7 @@ public:
 
   void increaseDensity();
   void decreaseDensity();
-  void display() const;
+  void display();
 private:
   void approximateNormalsAndCurvatures();
   size_t decimation;
