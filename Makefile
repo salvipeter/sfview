@@ -2,14 +2,18 @@ TARGETS=sfview sfview.ps sfview.txt
 
 all: $(TARGETS)
 
-OBJECTS=display.o \
-	keyboard.o \
-	mesh_surface.o \
-	mouse.o \
-	nurbs_surface.o \
-	sfview.o \
-	surface.o \
-	utilities.o
+SOURCES=display.cc \
+	keyboard.cc \
+	mesh_surface.cc \
+	mouse.cc \
+	nurbs_surface.cc \
+	sfview.cc \
+	surface.cc \
+	utilities.cc
+
+OBJECTS=$(subst .cc,.o,$(SOURCES))
+
+DEPENDENCIES=$(subst .cc,.d,$(SOURCES))
 
 CXXFLAGS=-g -Wall
 
@@ -23,20 +27,15 @@ sfview.ps: sfview.1
 sfview.txt: sfview.1
 	groff -man -Tascii $< > $@
 
+include $(DEPENDENCIES)
+
+# Rule for generating dependency files, from the make manual.
+
+%.d: %.cc
+	$(CXX) -M $(CXXFLAGS) $< > $@.$$$$;                  \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
 .PHONY: clean
 clean:
-	$(RM) $(OBJECTS) $(TARGETS)
-
-# Dependencies
-
-display.o: display.cc globals.hh utilities.hh surface.hh common.hh
-keyboard.o: keyboard.cc display.hh globals.hh mesh_surface.hh \
-            nurbs_surface.hh common.hh
-mesh_surface.o: mesh_surface.cc display.hh globals.hh mesh_surface.hh \
-                surface.hh common.hh
-mouse.o: mouse.cc display.hh globals.hh common.hh
-nurbs_surface.o: nurbs_surface.cc nurbs_surface.hh surface.hh globals.hh \
-                 common.hh
-sfview.o: sfview.cc display.hh globals.hh keyboard.hh mouse.hh common.hh
-surface.o: surface.cc
-utilities.o: utilities.cc common.hh
+	$(RM) $(OBJECTS) $(TARGETS) $(DEPENDENCIES)
