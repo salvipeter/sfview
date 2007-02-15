@@ -9,7 +9,12 @@
 
 #include <string>
 
+#include "common.hh"
+
 void init();
+void isophoteColor(Point p, Vector n, int d);
+void slicingColor(Point p, double d);
+void rainbowColor(double value, double min, double max);
 void display();
 void reshape(int w, int h);
 void updateMatrices();

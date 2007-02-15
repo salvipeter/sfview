@@ -10,33 +10,9 @@
 
 #include <GL/glut.h>
 
+#include "display.hh"
 #include "globals.hh"
 #include "mesh_surface.hh"
-
-void isophoteColor(Point p, Vector n, int d)
-{
-  if((int)(std::acos((p - eye_pos).normalized() * n) * (double)d) % 2 == 0)
-    glColor3d(1.0, 0.0, 0.0);
-  else
-    glColor3d(1.0, 1.0, 1.0);
-}
-
-void slicingColor(Point p, double d)
-{
-  Vector posvec(p[0], p[1], p[2]);
-  Vector direction = Vector(eye_pos[0], eye_pos[1], eye_pos[2]).normalized();
-
-  if((int)(posvec * direction * d) % 2 == 0)
-    glColor3d(1.0, 0.0, 0.0);
-  else
-    glColor3d(0.0, 0.0, 1.0);
-}
-
-void rainbowColor(double value, double min, double max)
-{
-  double const d = (value - min) / (max - min);
-  glColor3d(d, 1.0 - d, 0.0);
-}
 
 void MeshSurface::approximateNormalsAndCurvatures()
 {
@@ -110,10 +86,6 @@ MeshSurface::MeshSurface(std::string fname) :
   slicing_density(0.5)
 {
   std::ifstream in(filename.c_str());
-  if(in.fail()) {
-    error = true;
-    return;
-  }
   std::cout << "Loading file `" << filename << "'... " << std::flush;
 
   Point p;

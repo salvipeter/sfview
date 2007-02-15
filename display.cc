@@ -38,6 +38,31 @@ void updateMatrices()
   eye_pos = Point(-inverse[8], -inverse[9], -inverse[10]);
 }
 
+void isophoteColor(Point p, Vector n, int d)
+{
+  if((int)(std::acos((p - eye_pos).normalized() * n) * (double)d) % 2 == 0)
+    glColor3d(1.0, 0.0, 0.0);
+  else
+    glColor3d(1.0, 1.0, 1.0);
+}
+
+void slicingColor(Point p, double d)
+{
+  Vector posvec(p[0], p[1], p[2]);
+  Vector direction = Vector(eye_pos[0], eye_pos[1], eye_pos[2]).normalized();
+
+  if((int)(posvec * direction * d) % 2 == 0)
+    glColor3d(1.0, 0.0, 0.0);
+  else
+    glColor3d(0.0, 0.0, 1.0);
+}
+
+void rainbowColor(double value, double min, double max)
+{
+  double const d = (value - min) / (max - min);
+  glColor3d(d, 1.0 - d, 0.0);
+}
+
 void display()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

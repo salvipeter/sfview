@@ -5,6 +5,7 @@
 // See the file `sfview.cc' for copyright details.
 
 #include <cstdlib>
+#include <fstream>
 #include <sstream>
 
 #include <unistd.h>
@@ -41,7 +42,19 @@ void changeVisualization(Visualization v)
 
 bool loadFile(std::string filename)
 {
-  Surface *s = new MeshSurface(filename);
+  Surface *s;
+  std::string str;
+
+  std::ifstream in(filename.c_str());
+  if(in.fail())
+    return false;
+  in >> str;
+  in.close();
+
+  if(std::atoi(str.c_str()) > 0)
+    s = new MeshSurface(filename);
+  else
+    s = new NurbsSurface(filename);
   if(s->noError())
     surfaces.push_back(s);
   else

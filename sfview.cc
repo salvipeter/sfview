@@ -75,7 +75,7 @@ std::string const help_string =
   "Report bugs to <vukung@yahoo.com>.";
 
 std::string const version_string =
-  "SFView 0.20\n"
+  "SFView 0.21\n"
   "Copyright (C) 2007 Peter Salvi <vukung@yahoo.com>\n"
   "sfview comes with NO WARRANTY, to the extent permitted by law.\n"
   "This is free software.  You may redistribute copies of it under the terms\n"
