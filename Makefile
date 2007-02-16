@@ -1,4 +1,4 @@
-TARGETS=sfview sfview.ps sfview.txt
+TARGETS=sfview sfview.ps
 
 all: $(TARGETS)
 
@@ -24,17 +24,14 @@ sfview: $(OBJECTS)
 sfview.ps: sfview.1
 	groff -man -Tps $< > $@
 
-sfview.txt: sfview.1
-	groff -man -Tascii $< > $@
-
 include $(DEPENDENCIES)
 
 # Rule for generating dependency files, from the make manual.
 
 %.d: %.cc
-	$(CXX) -M $(CXXFLAGS) $< > $@.$$$$;                  \
+	$(CXX) -M $(CXXFLAGS) $< > $@.$$$$;                 \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+	$(RM) $@.$$$$
 
 .PHONY: clean
 clean:
