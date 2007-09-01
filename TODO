@@ -1,5 +1,6 @@
-			-*- mode: outline -*-
+			-*- mode: org -*-
 
 * Better visualization of NURBS surfaces
+* Other file formats (e.g. SGF)
 * Gauss/mean histograms
 * speed-up
