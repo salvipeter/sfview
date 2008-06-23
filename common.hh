@@ -1,6 +1,6 @@
 // SFView - Surface File Viewer
 //
-// Copyright (C) 2007 Peter Salvi <vukung@yahoo.com>
+// Copyright (C) 2007-2008 Peter Salvi <vukung@yahoo.com>
 //
 // See the file `sfview.cc' for copyright details.
 
@@ -86,10 +86,5 @@ typedef std::vector<Value> ValueVector;
 typedef ValueVector::iterator ValueIterator;
 
 typedef std::pair<Point, Point> Box;
-
-enum Visualization { SHADED, GAUSS, MEAN, ISOPHOTE,
-		     SLICING, WIREFRAME, POINTS };
-
-enum MouseMode { NOTHING, ROTATION, ZOOM, PAN };
 
 #endif // COMMON_HH

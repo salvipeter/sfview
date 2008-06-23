@@ -1,6 +1,7 @@
 			-*- mode: org -*-
 
 * Multiple surfaces in one RBN file
+* Highlight surface for a moment after selection
 * Better visualization of NURBS surfaces
 * Other input file formats (e.g. STL, IGES)
 * Other output file formats (e.g. PNG)

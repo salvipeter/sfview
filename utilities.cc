@@ -1,10 +1,10 @@
 // SFView - Surface File Viewer
 //
-// Copyright (C) 2007 Peter Salvi <vukung@yahoo.com>
+// Copyright (C) 2007-2008 Peter Salvi <vukung@yahoo.com>
 //
 // See the file `sfview.cc' for copyright details.
 
-#include "common.hh"
+#include "utilities.hh"
 
 inline Point minPoint(Point const &p1, Point const &p2)
 {

@@ -1,6 +1,6 @@
 // SFView - Surface File Viewer
 //
-// Copyright (C) 2007 Peter Salvi <vukung@yahoo.com>
+// Copyright (C) 2007-2008 Peter Salvi <vukung@yahoo.com>
 //
 // See the file `sfview.cc' for copyright details.
 
@@ -10,9 +10,7 @@
 
 #include <GL/glut.h>
 
-#include "display.hh"
-#include "globals.hh"
-#include "mesh_surface.hh"
+#include "mesh-surface.hh"
 
 void MeshSurface::approximateNormalsAndCurvatures()
 {
@@ -80,7 +78,7 @@ void MeshSurface::approximateNormalsAndCurvatures()
     *std::max_element(mean_curvature.begin(), mean_curvature.end());
 }
 
-MeshSurface::MeshSurface(std::string fname) :
+MeshSurface::MeshSurface(std::string fname, size_t max_n_of_quads) :
   Surface(fname),
   isophote_density(50),
   slicing_density(0.5)
@@ -117,7 +115,8 @@ MeshSurface::MeshSurface(std::string fname) :
   std::cout << "ok (" << bounding_box.first << " - "
 	    << bounding_box.second << ")" << std::endl;
 
-  decimation = (size_t)std::ceil(std::sqrt(resx * resy / max_n_of_quads));
+  decimation = (size_t)std::ceil(std::sqrt((double)(resx * resy) /
+					   (double)max_n_of_quads));
 
   std::cout << "Using a decimation factor of " << decimation
 	    << " while moving." << std::endl;
@@ -147,9 +146,35 @@ void MeshSurface::decreaseDensity()
   }
 }
 
-void MeshSurface::display()
+void MeshSurface::isophoteColor(Point const &p, Vector const &n, int d,
+				Point const &eye_pos)
+{
+  if((int)(std::acos((p - eye_pos).normalized() * n) * (double)d) % 2 == 0)
+    glColor3d(1.0, 0.0, 0.0);
+  else
+    glColor3d(1.0, 1.0, 1.0);
+}
+
+void MeshSurface::slicingColor(Point const &p, double d, Point const &eye_pos)
+{
+  Vector posvec(p[0], p[1], p[2]);
+  Vector direction = Vector(eye_pos[0], eye_pos[1], eye_pos[2]).normalized();
+
+  if((int)(posvec * direction * d) % 2 == 0)
+    glColor3d(1.0, 0.0, 0.0);
+  else
+    glColor3d(0.0, 0.0, 1.0);
+}
+
+void MeshSurface::rainbowColor(double value, double min, double max)
+{
+  double const d = std::min(std::max((value - min) / (max - min), min), max);
+  glColor3d(d, 1.0 - d, 0.0);
+}
+
+void MeshSurface::display(Point const &eye_pos, bool high_density)
 {    
-  size_t dec_incr = (mouse_mode == NOTHING && high_density) ? 1 : decimation;
+  size_t dec_incr = high_density ? 1 : decimation;
 
   PointVector const &p = points;
   VectorVector const &n = normals;
@@ -218,32 +243,32 @@ void MeshSurface::display()
 	break;
       case ISOPHOTE :
 	glBegin(GL_QUADS);
-	isophoteColor(p[i1], n[i1], isophote_density);
+	isophoteColor(p[i1], n[i1], isophote_density, eye_pos);
 	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
-	isophoteColor(p[i2], n[i2], isophote_density);
+	isophoteColor(p[i2], n[i2], isophote_density, eye_pos);
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
-	isophoteColor(p[i3], n[i3], isophote_density);
+	isophoteColor(p[i3], n[i3], isophote_density, eye_pos);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
-	isophoteColor(p[i4], n[i4], isophote_density);
+	isophoteColor(p[i4], n[i4], isophote_density, eye_pos);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
 	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
 	glEnd();
 	break;
       case SLICING :
 	glBegin(GL_QUADS);
-	slicingColor(p[i1], slicing_density);
+	slicingColor(p[i1], slicing_density, eye_pos);
 	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
-	slicingColor(p[i2], slicing_density);
+	slicingColor(p[i2], slicing_density, eye_pos);
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
-	slicingColor(p[i3], slicing_density);
+	slicingColor(p[i3], slicing_density, eye_pos);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
-	slicingColor(p[i4], slicing_density);
+	slicingColor(p[i4], slicing_density, eye_pos);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
 	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
 	glEnd();

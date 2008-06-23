@@ -1,6 +1,6 @@
 // SFView - Surface File Viewer
 //
-// Copyright (C) 2007 Peter Salvi <vukung@yahoo.com>
+// Copyright (C) 2007-2008 Peter Salvi <vukung@yahoo.com>
 //
 // See the file `sfview.cc' for copyright details.
 
@@ -23,7 +23,7 @@ public:
 
   void increaseDensity();
   void decreaseDensity();
-  void display();
+  void display(Point const &eye_pos, bool); // parameter high_density ignored
 private:
   void findOpenParen(std::ifstream &in) const;
   bool isCloseParen(std::ifstream &in) const;

@@ -1,13 +1,12 @@
 // SFView - Surface File Viewer
 //
-// Copyright (C) 2007 Peter Salvi <vukung@yahoo.com>
+// Copyright (C) 2007-2008 Peter Salvi <vukung@yahoo.com>
 //
 // See the file `sfview.cc' for copyright details.
 
 #include <fstream>
 
-#include "globals.hh"
-#include "nurbs_surface.hh"
+#include "nurbs-surface.hh"
 
 void NurbsSurface::findOpenParen(std::ifstream &in) const
 {
@@ -105,9 +104,6 @@ NurbsSurface::NurbsSurface(std::string filename) :
   globj = gluNewNurbsRenderer();
   gluNurbsProperty(globj, GLU_SAMPLING_TOLERANCE, axis / 20.0);
 
-  resx = (nu - 1) * nurbs_density;
-  resy = (nv - 1) * nurbs_density;
-
   error = false;
 }
 
@@ -119,7 +115,7 @@ void NurbsSurface::decreaseDensity()
 {
 }
 
-void NurbsSurface::display()
+void NurbsSurface::display(Point const &eye_pos, bool)
 {
   if(show_control_net) {
     glDisable(GL_LIGHTING);

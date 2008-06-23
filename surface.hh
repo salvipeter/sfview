@@ -1,6 +1,6 @@
 // SFView - Surface File Viewer
 //
-// Copyright (C) 2007 Peter Salvi <vukung@yahoo.com>
+// Copyright (C) 2007-2008 Peter Salvi <vukung@yahoo.com>
 //
 // See the file `sfview.cc' for copyright details.
 
@@ -8,6 +8,9 @@
 #define SURFACE_HH
 
 #include "common.hh"
+
+enum Visualization { SHADED, GAUSS, MEAN, ISOPHOTE,
+		     SLICING, WIREFRAME, POINTS };
 
 class Surface {
 public:
@@ -26,10 +29,9 @@ public:
 
   virtual void increaseDensity() = 0;
   virtual void decreaseDensity() = 0;
-  virtual void display() = 0;
+  virtual void display(Point const &eye_pos, bool high_density) = 0;
 protected:
   std::string filename;
-  size_t resx, resy;
   Box bounding_box;
   Visualization vis;
   bool hidden, error;

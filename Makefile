@@ -1,15 +1,8 @@
-TARGETS=sfview sfview.ps
+TARGETS=sfview sfview.ps TAGS
 
 all: $(TARGETS)
 
-SOURCES=display.cc \
-	keyboard.cc \
-	mesh_surface.cc \
-	mouse.cc \
-	nurbs_surface.cc \
-	sfview.cc \
-	surface.cc \
-	utilities.cc
+SOURCES=sfview.cc glwindow.cc utilities.cc mesh-surface.cc nurbs-surface.cc
 
 OBJECTS=$(subst .cc,.o,$(SOURCES))
 
@@ -27,11 +20,14 @@ sfview.ps: sfview.1
 include $(DEPENDENCIES)
 
 # Rule for generating dependency files, from the make manual.
-
 %.d: %.cc
 	$(CXX) -M $(CXXFLAGS) $< > $@.$$$$;                 \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	$(RM) $@.$$$$
+
+.PHONY: TAGS
+TAGS:
+	find . -name "*.[ch][ch]" -print | etags -
 
 .PHONY: clean
 clean:
