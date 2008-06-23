@@ -1,6 +1,8 @@
 			-*- mode: org -*-
 
+* Multiple surfaces in one RBN file
 * Better visualization of NURBS surfaces
-* Other file formats (e.g. SGF)
+* Other input file formats (e.g. STL, IGES)
+* Other output file formats (e.g. PNG)
 * Gauss/mean histograms
-* speed-up
+* Speedup
