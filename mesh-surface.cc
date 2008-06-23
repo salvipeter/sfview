@@ -78,14 +78,24 @@ void MeshSurface::approximateNormalsAndCurvatures()
     *std::max_element(mean_curvature.begin(), mean_curvature.end());
 }
 
-MeshSurface::MeshSurface(std::string fname, size_t max_n_of_quads) :
-  Surface(fname),
-  isophote_density(50),
-  slicing_density(0.5)
+bool MeshSurface::load(std::string const &filename, SurfacePVector &sv,
+		       size_t max_n_of_quads)
 {
   std::ifstream in(filename.c_str());
   std::cout << "Loading file `" << filename << "'... " << std::flush;
+  MeshSurface *sf = new MeshSurface(in, max_n_of_quads);
+  in.close();
+  if(!sf->error) {
+    sf->filename = filename;
+    sv.push_back(sf);
+  }
+  return !sf->error;
+}
 
+MeshSurface::MeshSurface(std::ifstream &in, size_t max_n_of_quads) :
+  isophote_density(50),
+  slicing_density(0.5)
+{
   Point p;
 
   in >> resx >> resy;

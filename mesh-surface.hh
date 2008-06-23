@@ -11,7 +11,9 @@
 
 class MeshSurface : public Surface {
 public:
-  MeshSurface(std::string filename, size_t max_n_of_quads);
+  MeshSurface(std::ifstream &in, size_t max_n_of_quads);
+  static bool load(std::string const &filename, SurfacePVector &sv,
+		   size_t max_n_of_quads);
   bool showControlNet() const { return false; }
   void toggleShowControlNet() { }
   void setVisualization(Visualization const v) { vis = v; }

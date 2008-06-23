@@ -8,7 +8,7 @@
 
 #include "nurbs-surface.hh"
 
-void NurbsSurface::findOpenParen(std::ifstream &in) const
+void NurbsSurface::findOpenParen(std::ifstream &in)
 {
   char c;
   do {
@@ -16,8 +16,9 @@ void NurbsSurface::findOpenParen(std::ifstream &in) const
   } while(c != '(');
 }
 
-bool NurbsSurface::isCloseParen(std::ifstream &in) const
+bool NurbsSurface::isCloseParen(std::ifstream &in)
 {
+  ignoreWhitespaces(in);
   char c;
   bool result = (in.peek() == ')');
   if(result)
@@ -25,16 +26,36 @@ bool NurbsSurface::isCloseParen(std::ifstream &in) const
   return result;
 }
 
-NurbsSurface::NurbsSurface(std::string filename) :
-  Surface(filename),
+double NurbsSurface::readLispFloat(std::ifstream &in)
+{
+  double result;
+  char c;
+  in >> result;
+  c = in.peek();
+  if(c == 'd' || c == 'f') {
+    int exponent;
+    in >> c;
+    in >> exponent;
+    result *= std::pow(10.0, exponent);
+  }
+  return result;
+}
+
+void NurbsSurface::ignoreWhitespaces(std::ifstream &in)
+{
+  char c = in.peek();
+  while(!in.eof() && (c == ' ' || c == '\t' || c == '\n' || c == '\r')) {
+    in.get(c);
+    c = in.peek();
+  }
+}
+
+NurbsSurface::NurbsSurface(std::ifstream &in) :
+  Surface(),
   show_control_net(false)
 {
-  std::ifstream in(filename.c_str());
-
-  std::cout << "Loading file `" << filename << "'... " << std::flush;
-
   std::string s;
-  float d, x, y, z;
+  float x, y, z;
 
   nu = 0;
 
@@ -54,13 +75,11 @@ NurbsSurface::NurbsSurface(std::string filename) :
       findOpenParen(in);
       findOpenParen(in);
       do {
-	in >> d;
-	knots_u.push_back(d);
+	knots_u.push_back(readLispFloat(in));
       } while(!isCloseParen(in));
       findOpenParen(in);
       do {
-	in >> d;
-	knots_v.push_back(d);
+	knots_v.push_back(readLispFloat(in));
       } while(!isCloseParen(in));
       isCloseParen(in);
     } else if(s == ":control-net") {
@@ -70,7 +89,9 @@ NurbsSurface::NurbsSurface(std::string filename) :
 	findOpenParen(in);
 	do {
 	  findOpenParen(in);
-	  in >> x >> y >> z;
+	  x = readLispFloat(in);
+	  y = readLispFloat(in);
+	  z = readLispFloat(in);
 	  control_net.push_back(Point(x, y, z));
 	  linear_cpts.push_back(x);
 	  linear_cpts.push_back(y);
@@ -83,7 +104,6 @@ NurbsSurface::NurbsSurface(std::string filename) :
       return;
     }
   }
-  in.close();
   nv = control_net.size() / nu;
 
   std::cout << "ok (" << nu << "x" << nv << " control points)" << std::endl;
@@ -105,6 +125,27 @@ NurbsSurface::NurbsSurface(std::string filename) :
   gluNurbsProperty(globj, GLU_SAMPLING_TOLERANCE, axis / 20.0);
 
   error = false;
+}
+
+bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv)
+{
+  bool error = false;
+
+  std::ifstream in(filename.c_str());
+  std::cout << "Loading file `" << filename << "'... " << std::flush;
+
+  while(!in.eof()) {
+    NurbsSurface *sf = new NurbsSurface(in);
+    error |= sf->error;
+    if(!sf->error) {
+      sf->filename = filename;
+      sv.push_back(sf);
+    }
+    ignoreWhitespaces(in);
+  }
+  in.close();
+
+  return !error;
 }
 
 void NurbsSurface::increaseDensity()

@@ -140,6 +140,13 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
     if(active > surfaces.size())
       active = surfaces.size();
     std::cout << "Changing surface to: " << activeName(false) << std::endl;
+    if(active != 0) {
+      surfaces[active-1]->toggleHidden();
+      display();
+      usleep(10000);
+      surfaces[active-1]->toggleHidden();
+      display();
+    }
     break;
   case 'c' :
     if(active != 0)
@@ -398,8 +405,8 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
 
 bool GLWindow::loadFile(std::string filename)
 {
-  Surface *s;
   std::string str;
+  bool result;
 
   std::ifstream in(filename.c_str());
   if(in.fail())
@@ -407,15 +414,13 @@ bool GLWindow::loadFile(std::string filename)
   in >> str;
   in.close();
 
+  // Simplified test: if it begins with a number, it is PTS, otherwise RBN.
   if(std::atoi(str.c_str()) > 0)
-    s = new MeshSurface(filename, max_n_of_quads);
+    result = MeshSurface::load(filename, surfaces, max_n_of_quads);
   else
-    s = new NurbsSurface(filename);
-  if(s->noError())
-    surfaces.push_back(s);
-  else
-    return false;
-  return true;
+    result = NurbsSurface::load(filename, surfaces);
+
+  return result;
 }
 
 void GLWindow::zoomToBoundingBox(Box const &b)

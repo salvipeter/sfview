@@ -13,7 +13,8 @@
 
 class NurbsSurface : public Surface {
 public:
-  NurbsSurface(std::string filename);
+  NurbsSurface(std::ifstream &in);
+  static bool load(std::string const &filename, SurfacePVector &sv);
   bool showControlNet() const { return show_control_net; }
   void toggleShowControlNet() { show_control_net = !show_control_net; }
   void setVisualization(Visualization const v) {
@@ -25,8 +26,10 @@ public:
   void decreaseDensity();
   void display(Point const &eye_pos, bool); // parameter high_density ignored
 private:
-  void findOpenParen(std::ifstream &in) const;
-  bool isCloseParen(std::ifstream &in) const;
+  static void findOpenParen(std::ifstream &in);
+  static bool isCloseParen(std::ifstream &in);
+  static double readLispFloat(std::ifstream &in);
+  static void ignoreWhitespaces(std::ifstream &in);
 
   int degree_u, degree_v;
   std::vector<float> knots_u, knots_v, linear_cpts;

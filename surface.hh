@@ -14,7 +14,7 @@ enum Visualization { SHADED, GAUSS, MEAN, ISOPHOTE,
 
 class Surface {
 public:
-  Surface(std::string fname) : filename(fname), vis(SHADED), hidden(false) { }
+  Surface() : vis(SHADED), hidden(false) { }
   virtual ~Surface() { }
 
   virtual bool showControlNet() const = 0;
