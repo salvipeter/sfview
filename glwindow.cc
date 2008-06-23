@@ -77,20 +77,23 @@ void GLWindow::show()
 
   object_width = (double)width / (double)height;
 
-  GLfloat light0_position[] = { 0.0, 10.0, 0.0, 0.0 };
-  GLfloat light1_position[] = { 0.0, 0.0, -10.0, 0.0 };
-  GLfloat light1_ambient[] = { 0.4, 0.4, 0.4, 1.0 };
-
-  glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-  glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
-  glLightfv(GL_LIGHT0, GL_AMBIENT, light1_ambient);
-
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
-  glEnable(GL_LIGHT1);
+
+  GLfloat ambientLight[] = { 0.2, 0.2, 0.2, 1.0 };
+  GLfloat diffuseLight[] = { 0.8, 0.8, 0.8, 1.0 };
+  GLfloat specularLight[] = { 0.5, 0.5, 0.5, 1.0 };
+  GLfloat position[] = { -1.5, 1.0, -4.0, 1.0 };
+
+  glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
+  glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
+  glLightfv(GL_LIGHT0, GL_POSITION, position);
+ 
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_COLOR_MATERIAL);
+  glShadeModel(GL_SMOOTH);
 
   glClearColor(0.7, 0.7, 0.7, 1.0);
 
@@ -115,8 +118,7 @@ void GLWindow::display()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
-    if(!(*i)->isHidden())
-      (*i)->display(eye_pos, mouse_mode == NOTHING && high_density);
+    (*i)->display(eye_pos, mouse_mode == NOTHING && high_density);
   glutSwapBuffers();
 }
 

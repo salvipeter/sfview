@@ -1,7 +1,6 @@
 			-*- mode: org -*-
 
 * Better visualization of NURBS surfaces
-* Better lighting
 * Other input file formats (e.g. STL, IGES)
 * Other output file formats (e.g. PNG)
 * Gauss/mean histograms

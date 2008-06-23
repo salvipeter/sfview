@@ -183,7 +183,10 @@ void MeshSurface::rainbowColor(double value, double min, double max)
 }
 
 void MeshSurface::display(Point const &eye_pos, bool high_density)
-{    
+{
+  if(hidden)
+    return;
+
   size_t dec_incr = high_density ? 1 : decimation;
 
   PointVector const &p = points;

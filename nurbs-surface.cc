@@ -120,9 +120,7 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
   std::cout << "ok (" << bounding_box.first << " - "
 	    << bounding_box.second << ")" << std::endl;
 
-  double const axis = (bounding_box.second - bounding_box.first).length();
   globj = gluNewNurbsRenderer();
-  gluNurbsProperty(globj, GLU_SAMPLING_TOLERANCE, axis / 20.0);
 
   error = false;
 }
@@ -184,10 +182,14 @@ void NurbsSurface::display(Point const &eye_pos, bool)
       }
   }
 
-  glEnable(GL_AUTO_NORMAL);
+  if(hidden)
+    return;
+
   glEnable(GL_LIGHTING);
   glColor3d(1.0, 1.0, 1.0);
 
+  glEnable(GL_AUTO_NORMAL);
+  glEnable(GL_NORMALIZE);
   gluBeginSurface(globj);
   gluNurbsSurface(globj,
 		  knots_u.size(), &knots_u[0],
