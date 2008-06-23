@@ -10,7 +10,6 @@
 
 GLfloat NurbsSurface::texcpts[2][2][2] =
   { {{0.0, 0.0}, {0.0, 1.0}}, {{1.0, 0.0}, {1.0, 1.0}} };
-GLfloat NurbsSurface::texknots[4] = {0.0, 0.0, 1.0, 1.0};
 
 void NurbsSurface::findOpenParen(std::ifstream &in)
 {
@@ -164,6 +163,11 @@ void NurbsSurface::GLInit()
 
   std::cout << "Generating textures... " << std::flush;
 
+  texknots_u[0] = texknots_u[1] = knots_u[degree_u];
+  texknots_u[2] = texknots_u[3] = knots_u[knots_u.size() - degree_u - 1];
+  texknots_v[0] = texknots_v[1] = knots_v[degree_v];
+  texknots_v[2] = texknots_v[3] = knots_v[knots_v.size() - degree_v - 1];
+
   glGenTextures(1, &isophote_texture);
   glBindTexture(GL_TEXTURE_2D, isophote_texture);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -242,7 +246,7 @@ void NurbsSurface::display(Point const &eye_pos, bool)
   glEnable(GL_NORMALIZE);
   gluBeginSurface(globj);
   if(vis != SHADED)
-    gluNurbsSurface(globj, 4, &texknots[0], 4, &texknots[0], 2 * 2, 2,
+    gluNurbsSurface(globj, 4, &texknots_u[0], 4, &texknots_v[0], 2 * 2, 2,
 		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
   glColor3d(1.0, 1.0, 1.0);
   gluNurbsSurface(globj,
