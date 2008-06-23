@@ -14,7 +14,10 @@
 class NurbsSurface : public Surface {
 public:
   NurbsSurface(std::ifstream &in);
-  static bool load(std::string const &filename, SurfacePVector &sv);
+  ~NurbsSurface();
+  static bool load(std::string const &filename, SurfacePVector &sv,
+		   int texwidth, int texheight);
+  void GLInit();
   bool showControlNet() const { return show_control_net; }
   void toggleShowControlNet() { show_control_net = !show_control_net; }
   void setVisualization(Visualization const v) {
@@ -31,12 +34,14 @@ private:
   static double readLispFloat(std::ifstream &in);
   static void ignoreWhitespaces(std::ifstream &in);
 
-  int degree_u, degree_v;
+  int degree_u, degree_v, texture_width, texture_height;
   std::vector<float> knots_u, knots_v, linear_cpts;
   int nu, nv;
   PointVector control_net;
   bool show_control_net;
   GLUnurbsObj *globj;
+  GLuint mean_texture, gauss_texture, isophote_texture, slicing_texture;
+  static GLfloat texcpts[2][2][2], texknots[4];
 };
 
 #endif // NURBS_SURFACE_HH

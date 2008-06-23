@@ -31,7 +31,7 @@ private:
   Point getObjectCoordinates(int x, int y);
 
   // Parameters
-  int width, height;
+  int width, height, texture_width, texture_height;
   size_t max_n_of_quads;
   // Variables
   SurfacePVector surfaces;

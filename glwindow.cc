@@ -30,6 +30,9 @@ std::string const GLWindow::help_string =
   "  -h, --help                 Display this help and exit.\n"
   "  -q, --quads=NUMBER         Maximum number of quads in low-density mode.\n"
   "                               2500 by default.\n"
+  "  -t, --texture-size=WIDTHxHEIGHT\n"
+  "                             Texture map size for B-Spline surfaces.\n"
+  "                               1024x1024 by default.\n"
   "  -v, --version              Print version information and exit."
   "\n\n"
   "See the man page for more information."
@@ -44,7 +47,8 @@ std::string const GLWindow::copyright_string =
   "For more information about these matters, see the files named COPYING.";
 
 GLWindow::GLWindow() :
-  width(800), height(600), max_n_of_quads(2500), high_density(false), active(0),
+  width(800), height(600), texture_width(1024), texture_height(1024),
+  max_n_of_quads(2500), high_density(false), active(0),
   next_id(-1), mouse_mode(NOTHING)
 {
 }
@@ -79,21 +83,25 @@ void GLWindow::show()
 
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
+  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
 
   GLfloat ambientLight[] = { 0.2, 0.2, 0.2, 1.0 };
   GLfloat diffuseLight[] = { 0.8, 0.8, 0.8, 1.0 };
   GLfloat specularLight[] = { 0.5, 0.5, 0.5, 1.0 };
-  GLfloat position[] = { -1.5, 1.0, -4.0, 1.0 };
+  GLfloat position[] = { -1.5, 1.0, 4.0, 1.0 };
 
   glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
   glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
   glLightfv(GL_LIGHT0, GL_POSITION, position);
- 
+
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_COLOR_MATERIAL);
   glShadeModel(GL_SMOOTH);
+
+//   glMaterialfv(GL_FRONT, ...);
+//   glMaterialfv(GL_BACK, ...);
 
   glClearColor(0.7, 0.7, 0.7, 1.0);
 
@@ -109,6 +117,9 @@ void GLWindow::show()
   glutMouseFunc(::mouseButton);
   glutMotionFunc(::mouseMotion);
   glutReshapeFunc(::reshape);
+
+  for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
+    (*i)->GLInit();
 
   glutMainLoop();
 }
@@ -353,6 +364,7 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
     {"geometry", required_argument, NULL, 'g'},
     {"help", no_argument, NULL, 'h'},
     {"quads", required_argument, NULL, 'q'},
+    {"texture-size", required_argument, NULL, 't'},
     {"version", no_argument, NULL, 'v'},
     {0, 0, 0, 0}
   };
@@ -360,7 +372,7 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
   std::string geom;
   int c, index;
 
-  while((c = getopt_long(argc, argv, "g:hq:v", long_options, NULL)) != -1) {
+  while((c = getopt_long(argc, argv, "g:hq:t:v", long_options, NULL)) != -1) {
     switch(c) {
     case 'g' :
       geom = optarg;
@@ -387,6 +399,18 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
 		  << " is not a valid number." << std::endl;
 	exit(2);
       }
+      break;
+    case 't' :
+      geom = optarg;
+      index = geom.find('x');
+      texture_width = std::atoi(geom.substr(0, index).c_str());
+      texture_height = std::atoi(geom.substr(index + 1).c_str());
+      if(texture_width <= 0 || texture_height <= 0) {
+	std::cerr << argv[0] << ": texture size should be of "
+	  "the format WIDTHxHEIGHT." << std::endl;
+	exit(2);
+      } else
+	std::cout << "Texture size: " << width << "x" << height << std::endl;
       break;
     case 'v' :
       std::cout << "SFView " << version << std::endl;
@@ -420,7 +444,8 @@ bool GLWindow::loadFile(std::string filename)
   if(std::atoi(str.c_str()) > 0)
     result = MeshSurface::load(filename, surfaces, max_n_of_quads);
   else
-    result = NurbsSurface::load(filename, surfaces);
+    result = NurbsSurface::load(filename, surfaces,
+				texture_width, texture_height);
 
   return result;
 }

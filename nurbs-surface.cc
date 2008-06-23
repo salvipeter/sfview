@@ -8,6 +8,10 @@
 
 #include "nurbs-surface.hh"
 
+GLfloat NurbsSurface::texcpts[2][2][2] =
+  { {{0.0, 0.0}, {0.0, 1.0}}, {{1.0, 0.0}, {1.0, 1.0}} };
+GLfloat NurbsSurface::texknots[4] = {0.0, 0.0, 1.0, 1.0};
+
 void NurbsSurface::findOpenParen(std::ifstream &in)
 {
   char c;
@@ -51,8 +55,7 @@ void NurbsSurface::ignoreWhitespaces(std::ifstream &in)
 }
 
 NurbsSurface::NurbsSurface(std::ifstream &in) :
-  Surface(),
-  show_control_net(false)
+  Surface(), show_control_net(false)
 {
   std::string s;
   float x, y, z;
@@ -120,12 +123,19 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
   std::cout << "ok (" << bounding_box.first << " - "
 	    << bounding_box.second << ")" << std::endl;
 
-  globj = gluNewNurbsRenderer();
-
   error = false;
 }
 
-bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv)
+NurbsSurface::~NurbsSurface()
+{
+//   glDeleteTextures(1, &mean_texture);
+//   glDeleteTextures(1, &gauss_texture);
+  glDeleteTextures(1, &isophote_texture);
+//   glDeleteTextures(1, &slicing_texture);
+}
+
+bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv,
+			int texwidth, int texheight)
 {
   bool error = false;
 
@@ -137,6 +147,8 @@ bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv)
     error |= sf->error;
     if(!sf->error) {
       sf->filename = filename;
+      sf->texture_width = texwidth;
+      sf->texture_height = texheight;
       sv.push_back(sf);
     }
     ignoreWhitespaces(in);
@@ -144,6 +156,35 @@ bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv)
   in.close();
 
   return !error;
+}
+
+void NurbsSurface::GLInit()
+{
+  globj = gluNewNurbsRenderer();
+
+  std::cout << "Generating textures... " << std::flush;
+
+  glGenTextures(1, &isophote_texture);
+  glBindTexture(GL_TEXTURE_2D, isophote_texture);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+		  GL_LINEAR_MIPMAP_NEAREST);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  unsigned char *data = new unsigned char[texture_width * texture_height * 3];
+  for(int i = 0; i < texture_width; ++i)
+    for(int j = 0; j < texture_height; ++j) {
+      int const index = 3 * (j * texture_width + i);
+      data[index] = ((i + j) / 10) % 2 == 0 ? 255 : 0;
+      data[index + 1] = 255;
+      data[index + 2] = 0;
+    }
+  gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, texture_width, texture_height,
+		    GL_RGB, GL_UNSIGNED_BYTE, data);
+  delete[] data;
+
+  std::cout << "ok" << std::endl;
 }
 
 void NurbsSurface::increaseDensity()
@@ -185,12 +226,25 @@ void NurbsSurface::display(Point const &eye_pos, bool)
   if(hidden)
     return;
 
-  glEnable(GL_LIGHTING);
-  glColor3d(1.0, 1.0, 1.0);
+  if(vis != SHADED)
+    glEnable(GL_TEXTURE_2D);
 
+  switch(vis) {
+//   case MEAN:     glBindTexture(GL_TEXTURE_2D, mean_texture); break;
+//   case GAUSS:    glBindTexture(GL_TEXTURE_2D, gauss_texture); break;
+  case ISOPHOTE: glBindTexture(GL_TEXTURE_2D, isophote_texture); break;
+//   case SLICING:  glBindTexture(GL_TEXTURE_2D, slicing_texture); break;
+  default: ;
+  }
+
+  glEnable(GL_LIGHTING);
   glEnable(GL_AUTO_NORMAL);
   glEnable(GL_NORMALIZE);
   gluBeginSurface(globj);
+  if(vis != SHADED)
+    gluNurbsSurface(globj, 4, &texknots[0], 4, &texknots[0], 2 * 2, 2,
+		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
+  glColor3d(1.0, 1.0, 1.0);
   gluNurbsSurface(globj,
 		  knots_u.size(), &knots_u[0],
 		  knots_v.size(), &knots_v[0],
@@ -198,4 +252,9 @@ void NurbsSurface::display(Point const &eye_pos, bool)
 		  degree_u + 1, degree_v + 1,
 		  GL_MAP2_VERTEX_3);
   gluEndSurface(globj);
+  glDisable(GL_NORMALIZE);
+  glDisable(GL_AUTO_NORMAL);
+
+  if(vis != SHADED)
+    glDisable(GL_TEXTURE_2D);
 }

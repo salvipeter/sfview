@@ -18,6 +18,9 @@ Print help information and exit.
 .BI "\-q, \-\-quads=" NUMBER
 Maximum number of quads in low-density mode. 2500 by default.
 .TP
+.BI "\-t, \-\-texture\-size=" WIDTHxHEIGHT
+Texture map size for B-Spline surfaces. 1024x1024 by default.
+.TP
 .B \-v, \-\-version
 Print version information and exit.
 .PP
@@ -27,10 +30,11 @@ There are also several keyboard commands for changing the view of one
 surface. All of them can be prepended by the number of the surface (1-9),
 otherwise they work on the last used surface. `0' means the following
 command(s) act on every surface - which is the default when the
-program starts up.
+program starts up. The commands that only apply to B-Spline surfaces
+or quadrilateral meshes are marked with [B] and [Q], respectively.
 .TP
 .B c
-Toggles the control net (for RBN files).
+Toggles the control net [B].
 .TP
 .B g
 Changes the visualization of the surface to Gauss map.
@@ -51,10 +55,10 @@ Changes the visualization of the surface to mean map.
 Changes the visualization of the surface to no map (only shading).
 .TP
 .B p
-Changes the visualization of the surface to points (for PTS files).
+Changes the visualization of the surface to points [Q].
 .TP
 .B w
-Changes the visualization of the surface to wireframe (for PTS files).
+Changes the visualization of the surface to wireframe [Q].
 .TP
 .B r
 Reloads the surface.
@@ -68,7 +72,7 @@ Decreases the density of the surface's isophote/slicing lines.
 Other useful commands:
 .TP
 .B d
-Toggles high-density view. The surfaces are always displayed in
+Toggles high-density view [Q]. The surfaces are always displayed in
 low-density while moving.
 .TP
 .B s

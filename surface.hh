@@ -16,6 +16,7 @@ class Surface {
 public:
   Surface() : vis(SHADED), hidden(false) { }
   virtual ~Surface() { }
+  virtual void GLInit() { }
 
   virtual bool showControlNet() const = 0;
   virtual void toggleShowControlNet() = 0;
