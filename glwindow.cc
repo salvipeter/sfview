@@ -86,9 +86,9 @@ void GLWindow::show()
   glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
 
   GLfloat ambientLight[] = { 0.2, 0.2, 0.2, 1.0 };
-  GLfloat diffuseLight[] = { 0.8, 0.8, 0.8, 1.0 };
-  GLfloat specularLight[] = { 0.5, 0.5, 0.5, 1.0 };
-  GLfloat position[] = { -1.5, 1.0, 4.0, 1.0 };
+  GLfloat diffuseLight[] = { 0.7, 0.7, 0.7, 1.0 };
+  GLfloat specularLight[] = { 0.7, 0.7, 0.7, 1.0 };
+  GLfloat position[] = { -4.5, 4.0, 4.0, 1.0 };
 
   glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
@@ -100,8 +100,25 @@ void GLWindow::show()
   glEnable(GL_COLOR_MATERIAL);
   glShadeModel(GL_SMOOTH);
 
-//   glMaterialfv(GL_FRONT, ...);
-//   glMaterialfv(GL_BACK, ...);
+//   GLfloat ambientMaterialFront[] = { ... };
+//   GLfloat diffuseMaterialFront[] = { ... };
+//   GLfloat specularMaterialFront[] = { ... };
+//   GLfloat shininessMaterialFront = ...;
+
+//   glMaterialfv(GL_FRONT, GL_AMBIENT, ambientMaterialFront);
+//   glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseMaterialFront);
+//   glMaterialfv(GL_FRONT, GL_SPECULAR, specularMaterialFront);
+//   glMaterialfv(GL_FRONT, GL_SHININESS, &shininessMaterialFront);
+
+//   GLfloat ambientMaterialBack[] = { ... };
+//   GLfloat diffuseMaterialBack[] = { ... };
+//   GLfloat specularMaterialBack[] = { ... };
+//   GLfloat shininessMaterialBack = ...;
+
+//   glMaterialfv(GL_BACK, GL_AMBIENT, ambientMaterialBack);
+//   glMaterialfv(GL_BACK, GL_DIFFUSE, diffuseMaterialBack);
+//   glMaterialfv(GL_BACK, GL_SPECULAR, specularMaterialBack);
+//   glMaterialfv(GL_BACK, GL_SHININESS, &shininessMaterialBack);
 
   glClearColor(0.7, 0.7, 0.7, 1.0);
 

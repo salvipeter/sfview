@@ -8,6 +8,8 @@
 
 #include "nurbs-surface.hh"
 
+GLuint NurbsSurface::default_isophote_texture = 0;
+
 GLfloat NurbsSurface::texcpts[2][2][2] =
   { {{0.0, 0.0}, {0.0, 1.0}}, {{1.0, 0.0}, {1.0, 1.0}} };
 
@@ -129,6 +131,7 @@ NurbsSurface::~NurbsSurface()
 {
 //   glDeleteTextures(1, &mean_texture);
 //   glDeleteTextures(1, &gauss_texture);
+//   glDeleteTextures(1, &default_isophote_texture);
   glDeleteTextures(1, &isophote_texture);
 //   glDeleteTextures(1, &slicing_texture);
 }
@@ -168,24 +171,59 @@ void NurbsSurface::GLInit()
   texknots_v[0] = texknots_v[1] = knots_v[degree_v];
   texknots_v[2] = texknots_v[3] = knots_v[knots_v.size() - degree_v - 1];
 
+//   void generateTexture(GLuint &name, void (NurbsSurface::*)(void) const fn);
+
+//   if(default_isophote_texture == 0)
+//     generateTexture(default_isophote_texture, generateIsophoteTexture);
+//   isophote_texture = default_isophote_texture;
+
+  // update:
+//   if(isophote_texture != default_isophote_texture)
+//     glDeleteTextures(1, &isophote_texture);
+//   generateTexture(isophote_texture, generateIsophoteTexture);
+
   glGenTextures(1, &isophote_texture);
   glBindTexture(GL_TEXTURE_2D, isophote_texture);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-		  GL_LINEAR_MIPMAP_NEAREST);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   unsigned char *data = new unsigned char[texture_width * texture_height * 3];
-  for(int i = 0; i < texture_width; ++i)
+  double const isophote_width = 5.0;
+  // Sphere mapping gives the 3-dimensional reflection (unit) vector
+  // in 2-dimensional form: let m = 2sqrt(x^2+y^2+(1+z)^2), then
+  // the coordinates are (x/m+0.5, y/m+0.5).
+  // We want to get the reflection angle in the line of sight, whose
+  // cosine is the z coordinate of the reflection vector, since the
+  // reflection vector is originally given in eye coordinates.
+  // Using the equation x^2+y^2+z^2=1, it turns out that
+  //   m = 8 * sqrt(1/4 - (x/m)^2 - (y/m)^2).
+  for(int i = 0, index = 0; i < texture_width; ++i) {
+    double const xm = (double)i / (double)(texture_width - 1) - 0.5;
     for(int j = 0; j < texture_height; ++j) {
-      int const index = 3 * (j * texture_width + i);
-      data[index] = ((i + j) / 10) % 2 == 0 ? 255 : 0;
-      data[index + 1] = 255;
-      data[index + 2] = 0;
+      double const ym = (double)j / (double)(texture_height - 1) - 0.5;
+      double const length2 = xm * xm + ym * ym;
+      if(length2 <= 0.25) {
+	double const m = 8.0 * std::sqrt(0.25 - length2);
+	double const x = xm * m;
+	double const y = ym * m;
+	double const z = std::sqrt(1.0 - x * x - y * y);
+	double const angle = std::acos(z) * 180.0 / M_PI;
+	bool color =
+	  static_cast<int>(std::floor(angle / isophote_width)) % 2 == 0;
+	data[index++] = 255;
+	data[index++] = color ? 0 : 255;
+	data[index++] = color ? 0 : 255;
+      } else { // outside the interesting region, just fill with zeroes
+	data[index++] = 0;
+	data[index++] = 0;
+	data[index++] = 0;
+      }
     }
-  gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, texture_width, texture_height,
-		    GL_RGB, GL_UNSIGNED_BYTE, data);
+  }
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height,
+	       0, GL_RGB, GL_UNSIGNED_BYTE, data);
   delete[] data;
 
   std::cout << "ok" << std::endl;
@@ -236,7 +274,13 @@ void NurbsSurface::display(Point const &eye_pos, bool)
   switch(vis) {
 //   case MEAN:     glBindTexture(GL_TEXTURE_2D, mean_texture); break;
 //   case GAUSS:    glBindTexture(GL_TEXTURE_2D, gauss_texture); break;
-  case ISOPHOTE: glBindTexture(GL_TEXTURE_2D, isophote_texture); break;
+  case ISOPHOTE:
+    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+    glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+    glEnable(GL_TEXTURE_GEN_S);
+    glEnable(GL_TEXTURE_GEN_T);	
+    glBindTexture(GL_TEXTURE_2D, isophote_texture);
+    break;
 //   case SLICING:  glBindTexture(GL_TEXTURE_2D, slicing_texture); break;
   default: ;
   }
@@ -258,6 +302,11 @@ void NurbsSurface::display(Point const &eye_pos, bool)
   gluEndSurface(globj);
   glDisable(GL_NORMALIZE);
   glDisable(GL_AUTO_NORMAL);
+
+  if(vis == ISOPHOTE) {
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+  }
 
   if(vis != SHADED)
     glDisable(GL_TEXTURE_2D);

@@ -1,4 +1,4 @@
-TARGETS=sfview sfview.ps TAGS
+TARGETS=sfview sfview.html sfview.ps TAGS
 
 all: $(TARGETS)
 
@@ -13,6 +13,9 @@ CXXFLAGS=-g -Wall
 LDFLAGS=-lglut
 
 sfview: $(OBJECTS)
+
+sfview.html: sfview.1
+	groff -man -Thtml $< > $@
 
 sfview.ps: sfview.1
 	groff -man -Tps $< > $@

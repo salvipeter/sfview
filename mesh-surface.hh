@@ -23,7 +23,7 @@ public:
   void display(Point const &eye_pos, bool high_density);
 private:
   void approximateNormalsAndCurvatures();
-  void isophoteColor(Point const &p, Vector const &n, int d,
+  void isophoteColor(Point const &p, Vector const &n, double d,
 		     Point const &eye_pos);
   void slicingColor(Point const &p, double d, Point const &eye_pos);
   void rainbowColor(double value, double min, double max);
@@ -38,8 +38,7 @@ private:
   ValueVector mean_curvature;
   double mean_min;
   double mean_max;
-  int isophote_density;
-  double slicing_density;
+  double isophote_width, slicing_density;
 };
 
 #endif // MESH_SURFACE_HH

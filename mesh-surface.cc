@@ -64,7 +64,8 @@ void MeshSurface::approximateNormalsAndCurvatures()
       double const k1 = (m + d) / a;
       double const k2 = (m - d) / a;
 
-      normals.push_back(normal);
+      // OpenGL seems to want the opposite direction... strange
+      normals.push_back(normal * -1.0);
       Gauss_curvature.push_back(k1 * k2);
       mean_curvature.push_back((k1 + k2) * 0.5);
     }
@@ -93,7 +94,7 @@ bool MeshSurface::load(std::string const &filename, SurfacePVector &sv,
 }
 
 MeshSurface::MeshSurface(std::ifstream &in, size_t max_n_of_quads) :
-  isophote_density(50),
+  isophote_width(2.0),
   slicing_density(0.5)
 {
   Point p;
@@ -142,7 +143,7 @@ void MeshSurface::increaseDensity()
 {
   switch(vis) {
   case SLICING : slicing_density *= 2.0; break;
-  case ISOPHOTE : isophote_density += 5; break;
+  case ISOPHOTE : isophote_width /= 2.0; break;
   default: ;
   }
 }
@@ -151,15 +152,16 @@ void MeshSurface::decreaseDensity()
 {
   switch(vis) {
   case SLICING : slicing_density /= 2.0; break;
-  case ISOPHOTE : isophote_density -= 5; break;
+  case ISOPHOTE : isophote_width *= 2.0; break;
   default: ;
   }
 }
 
-void MeshSurface::isophoteColor(Point const &p, Vector const &n, int d,
+void MeshSurface::isophoteColor(Point const &p, Vector const &n, double d,
 				Point const &eye_pos)
 {
-  if((int)(std::acos((p - eye_pos).normalized() * n) * (double)d) % 2 == 0)
+  double const angle = std::acos((p - eye_pos).normalized() * n) * 180.0 / M_PI;
+  if(static_cast<int>(std::floor(angle / isophote_width)) % 2 == 0)
     glColor3d(1.0, 0.0, 0.0);
   else
     glColor3d(1.0, 1.0, 1.0);
@@ -256,16 +258,16 @@ void MeshSurface::display(Point const &eye_pos, bool high_density)
 	break;
       case ISOPHOTE :
 	glBegin(GL_QUADS);
-	isophoteColor(p[i1], n[i1], isophote_density, eye_pos);
+	isophoteColor(p[i1], n[i1], isophote_width, eye_pos);
 	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
-	isophoteColor(p[i2], n[i2], isophote_density, eye_pos);
+	isophoteColor(p[i2], n[i2], isophote_width, eye_pos);
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
-	isophoteColor(p[i3], n[i3], isophote_density, eye_pos);
+	isophoteColor(p[i3], n[i3], isophote_width, eye_pos);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
-	isophoteColor(p[i4], n[i4], isophote_density, eye_pos);
+	isophoteColor(p[i4], n[i4], isophote_width, eye_pos);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
 	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
 	glEnd();

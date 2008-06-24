@@ -41,6 +41,7 @@ private:
   bool show_control_net;
   GLUnurbsObj *globj;
   GLuint mean_texture, gauss_texture, isophote_texture, slicing_texture;
+  static GLuint default_isophote_texture;
   GLfloat texknots_u[4], texknots_v[4];
   static GLfloat texcpts[2][2][2];
 };
