@@ -46,10 +46,14 @@ std::string const GLWindow::copyright_string =
   "of the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n"
   "For more information about these matters, see the files named COPYING.";
 
+double const GLWindow::view_angle = 45.0; // field of view in the y direction
+double const GLWindow::znear_coefficient = 0.4;
+double const GLWindow::zfar_coefficient = 1.7;
+
 GLWindow::GLWindow() :
   width(800), height(600), texture_width(1024), texture_height(1024),
-  max_n_of_quads(2500), high_density(false), active(0),
-  next_id(-1), mouse_mode(NOTHING)
+  max_n_of_quads(2500), high_density(false),
+  active(0), next_id(-1), mouse_mode(NOTHING)
 {
 }
 
@@ -125,9 +129,8 @@ void GLWindow::show()
   Box b = surfaces.front()->boundingBox();
   for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
     b = boxUnion(b, (*i)->boundingBox());
-  zoomToBoundingBox(b);
-
-  updateMatrices();
+  bounding_box = b;
+  zoomToBoundingBox();
 
   glutDisplayFunc(::display);
   glutKeyboardFunc(::keyboard);
@@ -144,9 +147,15 @@ void GLWindow::show()
 void GLWindow::display()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glLoadIdentity();
+  gluLookAt(eye[0], eye[1], eye[2],
+	    center[0], center[1], center[2],
+	    up[0], up[1], up[2]);
 
   for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
-    (*i)->display(eye_pos, mouse_mode == NOTHING && high_density);
+    (*i)->display(eye, mouse_mode == NOTHING && high_density);
+
+  glFlush();
   glutSwapBuffers();
 }
 
@@ -317,41 +326,33 @@ void GLWindow::mouseMotion(int x, int y)
   if(mouse_mode == NOTHING)
     return;
 
-  Point oldp, p;
-  Vector diff, axis, rotmp;
-  double scaling, theta;
+  double dx = (double)(x - mouse_start[0]) / (double)width;
+  double dy = (double)(y - mouse_start[1]) / (double)height;
+  double length;
+  Vector axis;
 
   switch(mouse_mode) {
   case ROTATION :
-    rotmp = Vector(y - mouse_start[1], x - mouse_start[0], 0.0);
-    theta = rotmp.length() / (double)height * 180.0;
-
-    axis[0] = rotmp * Vector(inverse[0], inverse[4], inverse[8]);
-    axis[1] = rotmp * Vector(inverse[1], inverse[5], inverse[9]);
-    axis[2] = rotmp * Vector(inverse[2], inverse[6], inverse[10]);
-
-    glTranslated(center[0], center[1], center[2]);
-    glRotated(theta, axis[0], axis[1], axis[2]);
-    glTranslated(-center[0], -center[1], -center[2]);
+    axis = (up ^ (center - eye)).normalized();
+    eye = rotatePoint(eye, center, up, -dx * M_PI);
+    eye = rotatePoint(eye, center, axis, dy * M_PI);
+    up = (rotatePoint((center + up), center, axis, dy * M_PI) - center)
+      .normalized();
     break;
   case ZOOM :
-    scaling = 1.0 / std::exp((y - mouse_start[1]) * 0.01);
-    glTranslated(center[0], center[1], center[2]);
-    glScaled(scaling, scaling, scaling);
-    glTranslated(-center[0], -center[1], -center[2]);
+    eye = center + (eye - center) * (dy + 1.0);
     break;
   case PAN :
-    oldp = getObjectCoordinates(mouse_start[0], mouse_start[1]);
-    p = getObjectCoordinates(x, y);
-    diff = oldp - p;
-    center = center + diff;
-    glTranslated(-diff[0], -diff[1], -diff[2]);
+    length = (eye - center).length() * tan(view_angle / 2.0) * 2.0;
+    axis = (up ^ (center - eye)).normalized();
+    center = center + axis * dx * length;
+    center = center + up * dy * length;
     break;
   default: break;
   }
   mouse_start[0] = x; mouse_start[1] = y;
 
-  updateMatrices();
+  setClippingPlanes();
 
   display();
 }
@@ -366,11 +367,8 @@ void GLWindow::reshape(int w, int h)
   object_width = (double)w / (double)h;
   
   glViewport(0, 0, w, h);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(-object_width / 2.0, object_width / 2.0, -0.5, 0.5, -10.0, 10.0);
 
-  glMatrixMode(GL_MODELVIEW);
+  setClippingPlanes();
 }
 
 StringVector GLWindow::parseCommandLine(int argc, char *argv[])
@@ -467,22 +465,63 @@ bool GLWindow::loadFile(std::string filename)
   return result;
 }
 
-void GLWindow::zoomToBoundingBox(Box const &b)
+void GLWindow::zoomToBoundingBox()
 {
-  center = affineCombine(b.first, 0.5, b.second);
-  Vector const tmp = b.second - b.first;
-  double const scaling = 0.9 / std::max(std::max(tmp[0], tmp[1]), tmp[2]);
+  center = affineCombine(bounding_box.first, 0.5, bounding_box.second);
+  Vector const diagonal = bounding_box.second - bounding_box.first;
 
-  glLoadIdentity();
-  glScaled(scaling, scaling, scaling);
-  glTranslated(-center[0], -center[1], -center[2]);
+  center = bounding_box.first + diagonal / 2.0;
+  up = Vector(0.0, 1.0, 0.0);
+
+  // Eye position is calculated from the bounding box and the view angle.
+  // The eye is located behind the center of the bounding box.
+  // Also give some extra space on the sides (the factor is now 1.2).
+  double const bwidth = bounding_box.second[0] - bounding_box.first[0];
+  double const bheight = bounding_box.second[1] - bounding_box.first[1];
+  double const length = 1.2 * std::max(bwidth, bheight);
+  double const eye_z =
+    bounding_box.second[2] + length / (2.0 * tan(view_angle * M_PI / 360.0));
+  eye = Point(center[0], center[1], eye_z);
+
+  setClippingPlanes();
 }
 
-void GLWindow::updateMatrices()
+Point GLWindow::boundingBoxPoint(int i)
 {
-  glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-  invert4x4Matrix(modelview, inverse);
-  eye_pos = Point(-inverse[8], -inverse[9], -inverse[10]);
+  Point result;
+  Point const &b1 = bounding_box.first, &b2 = bounding_box.second;
+  switch(i) {
+  case 0: result = b1; break;
+  case 1: result = Point(b2[0], b1[1], b1[2]); break;
+  case 2: result = Point(b1[0], b2[1], b1[2]); break;
+  case 3: result = Point(b2[0], b2[1], b1[2]); break;
+  case 4: result = Point(b1[0], b1[1], b2[2]); break;
+  case 5: result = Point(b2[0], b1[1], b2[2]); break;
+  case 6: result = Point(b1[0], b2[1], b2[2]); break;
+  case 7: result = b2; break;
+  default: ;
+  }
+  return result;
+}
+
+void GLWindow::setClippingPlanes()
+{
+  double znear = 1, zfar = 10;
+
+  // Get the eye distance of the nearest and farest bounding box vertex
+  Vector const eye_dir = (center - eye).normalized();
+  for(int i = 0; i < 8; ++i) {
+    double const d = (boundingBoxPoint(i) - eye) * eye_dir;
+    znear = std::min(znear, d);
+    zfar = std::max(zfar, d);
+  }
+  znear *= znear_coefficient;
+  zfar *= zfar_coefficient;
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluPerspective(view_angle, object_width, znear, zfar);
+  glMatrixMode(GL_MODELVIEW);
 }
 
 std::string GLWindow::activeName(bool capital)
@@ -527,20 +566,4 @@ void GLWindow::saveScreenShot(std::string filename)
 	<< buffer[3 * (j * width + i) + 2];
   f << std::endl;
   f.close();
-}
-
-Point GLWindow::getObjectCoordinates(int x, int y)
-{
-  Vector v;
-  Point result;
-
-  v[0] = ((double)x / (double)width - 0.5) * object_width;
-  v[1] = (double)(height - y) / (double)height - 0.5;
-  v[2] = -10.0;
-
-  result[0] = v * Vector(inverse[0], inverse[4], inverse[8]);
-  result[1] = v * Vector(inverse[1], inverse[5], inverse[9]);
-  result[2] = v * Vector(inverse[2], inverse[6], inverse[10]);
-
-  return result;
 }

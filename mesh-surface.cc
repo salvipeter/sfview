@@ -160,7 +160,7 @@ void MeshSurface::decreaseDensity()
 void MeshSurface::isophoteColor(Point const &p, Vector const &n, double d,
 				Point const &eye_pos)
 {
-  double const angle = std::acos((p - eye_pos).normalized() * n) * 180.0 / M_PI;
+  double const angle = std::acos((eye_pos - p).normalized() * n) * 180.0 / M_PI;
   if(static_cast<int>(std::floor(angle / isophote_width)) % 2 == 0)
     glColor3d(1.0, 0.0, 0.0);
   else

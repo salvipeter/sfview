@@ -14,6 +14,7 @@ inline Point maxPoint(Point const &p1, Point const &p2);
 Box boxUnion(Box const &b1, Box const &b2);
 inline double interpolate(double d1, double t, double d2);
 Point affineCombine(Point const &p1, double t, Point const &p2);
-void invert4x4Matrix(double *m, double *result);
+Point rotatePoint(Point const &p, Point const &center, Vector const &axis,
+		  double theta);
 
 #endif // UTILITIES_HH

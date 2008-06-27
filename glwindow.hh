@@ -23,26 +23,29 @@ public:
 private:
   StringVector parseCommandLine(int argc, char *argv[]);
   bool loadFile(std::string filename);
-  void zoomToBoundingBox(Box const &b);
-  void updateMatrices();
+  void zoomToBoundingBox();
+  Point boundingBoxPoint(int i);
+  void setClippingPlanes();
   std::string activeName(bool capital);
   void changeVisualization(Visualization v);
   void saveScreenShot(std::string filename);
-  Point getObjectCoordinates(int x, int y);
 
   // Parameters
   int width, height, texture_width, texture_height;
   size_t max_n_of_quads;
   // Variables
   SurfacePVector surfaces;
-  Point center, eye_pos;
-  double modelview[16], inverse[16], object_width;
+  Box bounding_box;
+  Point center, eye;
+  Vector up;
+  double object_width;
   bool high_density;
   size_t active;
   int mouse_start[2], next_id;
   enum MouseMode { NOTHING, ROTATION, ZOOM, PAN } mouse_mode;
   // Constants
   static std::string const help_string, copyright_string;
+  static double const view_angle, znear_coefficient, zfar_coefficient;
 };
 
 #endif	// GL_WINDOW_HH

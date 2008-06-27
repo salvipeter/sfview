@@ -163,6 +163,14 @@ bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv,
 void NurbsSurface::GLInit()
 {
   globj = gluNewNurbsRenderer();
+  // The NURBS surface has to be very precise
+  gluNurbsProperty(globj, GLU_SAMPLING_METHOD, GLU_PARAMETRIC_ERROR);
+  gluNurbsProperty(globj, GLU_PARAMETRIC_TOLERANCE, 0.5);
+  // Not-so-precise version:
+//   gluNurbsProperty(globj, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
+//   gluNurbsProperty(globj, GLU_SAMPLING_TOLERANCE, 20.0);
+
+  gltextobj = gluNewNurbsRenderer();
 
   std::cout << "Generating textures... " << std::flush;
 
@@ -195,21 +203,20 @@ void NurbsSurface::GLInit()
   // in 2-dimensional form: let m = 2sqrt(x^2+y^2+(1+z)^2), then
   // the coordinates are (x/m+0.5, y/m+0.5).
   // We want to get the reflection angle in the line of sight, whose
-  // cosine is the z coordinate of the reflection vector, since the
-  // reflection vector is originally given in eye coordinates.
+  // (doubled) cosine can be approximated by the z coordinate of the
+  // reflection vector, since the reflection vector is given in eye
+  // coordinates.
   // Using the equation x^2+y^2+z^2=1, it turns out that
-  //   m = 8 * sqrt(1/4 - (x/m)^2 - (y/m)^2).
+  //   m^2 = 64 * (1/4 - (x/m)^2 - (y/m)^2).
   for(int i = 0, index = 0; i < texture_width; ++i) {
     double const xm = (double)i / (double)(texture_width - 1) - 0.5;
     for(int j = 0; j < texture_height; ++j) {
       double const ym = (double)j / (double)(texture_height - 1) - 0.5;
       double const length2 = xm * xm + ym * ym;
       if(length2 <= 0.25) {
-	double const m = 8.0 * std::sqrt(0.25 - length2);
-	double const x = xm * m;
-	double const y = ym * m;
-	double const z = std::sqrt(1.0 - x * x - y * y);
-	double const angle = std::acos(z) * 180.0 / M_PI;
+	double const m2 = 64.0 * (0.25 - length2);
+	double const z = std::sqrt(m2 / 4.0 - m2 * length2) - 1.0;
+	double const angle = (std::acos(z) * 180.0 / M_PI) / 2.0;
 	bool color =
 	  static_cast<int>(std::floor(angle / isophote_width)) % 2 == 0;
 	data[index++] = 255;
@@ -290,7 +297,7 @@ void NurbsSurface::display(Point const &eye_pos, bool)
   glEnable(GL_NORMALIZE);
   gluBeginSurface(globj);
   if(vis != SHADED)
-    gluNurbsSurface(globj, 4, &texknots_u[0], 4, &texknots_v[0], 2 * 2, 2,
+    gluNurbsSurface(gltextobj, 4, &texknots_u[0], 4, &texknots_v[0], 2 * 2, 2,
 		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
   glColor3d(1.0, 1.0, 1.0);
   gluNurbsSurface(globj,
