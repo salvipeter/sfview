@@ -4,7 +4,10 @@
 //
 // See the file `sfview.cc' for copyright details.
 
+#include <algorithm>
 #include <fstream>
+
+#include "utilities.hh"
 
 #include "nurbs-surface.hh"
 
@@ -83,10 +86,12 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
       findOpenParen(in);
       do {
 	knots_u.push_back(readLispFloat(in));
+	fknots_u.push_back(knots_u.back());
       } while(!isCloseParen(in));
       findOpenParen(in);
       do {
 	knots_v.push_back(readLispFloat(in));
+	fknots_v.push_back(knots_v.back());
       } while(!isCloseParen(in));
       isCloseParen(in);
     } else if(s == ":control-net") {
@@ -220,26 +225,53 @@ void NurbsSurface::generateEvaluatedTextures(bool only_slicing = false)
 {
   int const w = high_quality_textures ? texture_width : texture_width_low;
   int const h = high_quality_textures ? texture_height : texture_height_low;
+  int index;
   unsigned char *data = new unsigned char[w * h * 3];
 
-  // Compute points and derivatives
+  VectorMatrix points(w, VectorVector(h));
+
+  // Compute points, derivatives and curvatures
+  double const lu = lowerBoundU(), uu = upperBoundU();
+  double const lv = lowerBoundV(), uv = upperBoundV();
+  for(int i = 0; i < w; ++i) {
+    double const u = interpolate(lu, (double)i / (double)(w - 1), uu);
+    for(int j = 0; j < h; ++j) {
+      double const v = interpolate(lv, (double)j / (double)(h - 1), uv);
+      VectorMatrix const deriv = derivatives(u, v, 0);
+      points[i][j] = deriv[0][0];
+    }
+  }
 
   if(!only_slicing) {
 
-    texturePrologue(gauss_texture);
     // gauss
+    index = 0;
+    texturePrologue(gauss_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
 		 data);
 
-    texturePrologue(mean_texture);
     // mean
+    index = 0;
+    texturePrologue(mean_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
 		 data);
 
   }
 
-  texturePrologue(slicing_texture);
   // slicing
+  texturePrologue(slicing_texture);
+  index = 0;
+  std::ofstream f("test.data");
+  for(int i = 0; i < w; ++i)
+    for(int j = 0; j < h; ++j) {
+      f << points[i][j][0] << " " << points[i][j][1] << " " << points[i][j][2] << std::endl;
+      bool color =
+	(int)(points[i][j] * slicing_direction * slicing_density) % 2 == 0;
+      data[index++] = color ? 255 : 0;
+      data[index++] = 0;
+      data[index++] = color ? 0 : 255;
+    }
+  f.close();
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
 	       data);
 
@@ -256,10 +288,10 @@ void NurbsSurface::GLInit()
 
   std::cout << "Generating textures... " << std::flush;
 
-  texknots_u[0] = texknots_u[1] = knots_u[degree_u];
-  texknots_u[2] = texknots_u[3] = knots_u[knots_u.size() - degree_u - 1];
-  texknots_v[0] = texknots_v[1] = knots_v[degree_v];
-  texknots_v[2] = texknots_v[3] = knots_v[knots_v.size() - degree_v - 1];
+  texknots_u[0] = texknots_u[1] = lowerBoundU();
+  texknots_u[2] = texknots_u[3] = upperBoundU();
+  texknots_v[0] = texknots_v[1] = lowerBoundV();
+  texknots_v[2] = texknots_v[3] = upperBoundV();
 
   if(default_isophote_texture == 0)
     generateIsophoteTexture(default_isophote_texture);
@@ -380,8 +412,8 @@ void NurbsSurface::display(Point const &eye_pos, bool high_density)
 		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
   glColor3d(1.0, 1.0, 1.0);
   gluNurbsSurface(globj,
-		  knots_u.size(), &knots_u[0],
-		  knots_v.size(), &knots_v[0],
+		  fknots_u.size(), &fknots_u[0],
+		  fknots_v.size(), &fknots_v[0],
 		  nv * 3, 3, &linear_cpts[0],
 		  degree_u + 1, degree_v + 1,
 		  GL_MAP2_VERTEX_3);
@@ -396,4 +428,101 @@ void NurbsSurface::display(Point const &eye_pos, bool high_density)
 
   if(vis != SHADED)
     glDisable(GL_TEXTURE_2D);
+}
+
+// Evaluation as in The NURBS Book, algorithms A2.1, A2.3, A3.6.
+
+int NurbsSurface::findSpan(DoubleVector const &knots, double t, int n)
+{
+  if(t == knots[n])
+    return n - 1;
+  return std::upper_bound(knots.begin(), knots.end(), t) - knots.begin();
+}
+
+DoubleMatrix NurbsSurface::basisDerivatives(DoubleVector const &knots,
+					    int i, int p, double u, int n)
+{
+  DoubleMatrix ndu(p + 1, DoubleVector(p + 1));
+  DoubleMatrix a(2, DoubleVector(p + 1));
+  DoubleMatrix ders(n + 1, DoubleVector(p + 1));
+  DoubleVector left(p + 1), right(p + 1);
+
+  ndu[0][0] = 1.0;
+  for(int j = 1; j <= p; ++j) {
+    left[j] = u - knots[i + 1 - j];
+    right[j] = knots[i + j] - u;
+    double saved = 0.0;
+    for(int r = 0; r < j; ++r) {
+      ndu[j][r] = right[r+1] + left[j-r];
+      double temp = ndu[r][j-1] / ndu[j][r];
+
+      ndu[r][j] = saved + right[r+1] * temp;
+      saved = left[j-r] * temp;
+    }
+    ndu[j][j] = saved;
+  }
+  
+  for(int j = 0; j <= p; ++j)
+    ders[0][j] = ndu[j][p];
+
+  for(int r = 0; r <= p; ++r) {
+    int s1 = 0, s2 = 1;
+    a[0][0] = 1.0;
+    for(int k = 1; k <= n; ++k) {
+      double d = 0.0;
+      int rk = r - k, pk = p - k;
+      if(r >= k) {
+	a[s2][0] = a[s1][0] / ndu[pk+1][rk];
+	d = a[s2][0] * ndu[rk][pk];
+      }
+      for(int j = (rk >= -1 ? 1 : -rk); j <= (r-1 <= pk ? k-1 : p-r); ++j) {
+	a[s2][j] = (a[s1][j] - a[s1][j-1]) / ndu[pk+1][rk+j];
+	d += a[s2][j] * ndu[rk+j][pk];
+      }
+      if(r <= pk) {
+	a[s2][k] = -a[s1][k-1] / ndu[pk+1][r];
+	d += a[s2][k] * ndu[r][pk];
+      }
+      ders[k][r] = d;
+      std::swap(s1, s2);
+    }
+  }
+  
+  int r = p;
+  for(int k = 1; k <= n; ++k) {
+    for(int j = 0; j <= p; ++j)
+      ders[k][j] *= r;
+    r *= p - k;
+  }
+
+  return ders;
+}
+
+VectorMatrix NurbsSurface::derivatives(double u, double v, int d) const
+{
+  int const p = degree_u, q = degree_v;
+  int const du = std::min(d, p), dv = std::min(d, q);
+  VectorMatrix ders(d + 1, VectorVector(d + 1, Vector(0, 0, 0)));
+  VectorVector temp(q + 1, Vector(0.0, 0.0, 0.0));
+
+  int uspan = findSpan(knots_u, u, nu), vspan = findSpan(knots_v, v, nv);
+  DoubleMatrix nders_u = basisDerivatives(knots_u, uspan, degree_u, u, du);
+  DoubleMatrix nders_v = basisDerivatives(knots_v, vspan, degree_v, v, dv);
+
+  for(int k = 0; k <= du; ++k) {
+    for(int s = 0; s <= q; ++s)
+      for(int r = 0; r <= p; ++r) {
+	Vector const &pvector =
+	  control_net[(uspan-p+r) * nv + (vspan-q+s)] - Point(0.0, 0.0, 0.0);
+	temp[s] = temp[s] + pvector * nders_u[k][r];
+      }
+    int const dd = std::min(d - k, dv);
+    for(int l = 0; l <= dd; ++l) {
+      ders[k][l] = 0.0;
+      for(int s = 0; s <= q; ++s)
+	ders[k][l] = ders[k][l] + temp[s] * nders_v[l][s];
+    }
+  }
+
+  return ders;
 }

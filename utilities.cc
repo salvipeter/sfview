@@ -28,11 +28,6 @@ Box boxUnion(Box const &b1, Box const &b2)
   return result;
 }
 
-inline double interpolate(double d1, double t, double d2)
-{
-  return d1 + (d2 - d1) * t;
-}
-
 Point affineCombine(Point const &p1, double t, Point const &p2)
 {
   return Point(interpolate(p1[0], t, p2[0]),

@@ -36,10 +36,19 @@ private:
   static void texturePrologue(GLuint &name);
   void generateIsophoteTexture(GLuint &name) const;
   void generateEvaluatedTextures(bool only_slicing);
+  double lowerBoundU() { return knots_u[degree_u]; }
+  double upperBoundU() { return knots_u[knots_u.size() - degree_u - 1]; }
+  double lowerBoundV() { return knots_v[degree_v]; }
+  double upperBoundV() { return knots_v[knots_v.size() - degree_v - 1]; }
+  static int findSpan(DoubleVector const &knots, double t, int n);
+  static DoubleMatrix basisDerivatives(DoubleVector const &knots,
+				       int i, int p, double u, int n);
+  VectorMatrix derivatives(double u, double v, int d) const;
 
   int degree_u, degree_v, texture_width, texture_height;
   double isophote_width, slicing_density;
-  std::vector<float> knots_u, knots_v, linear_cpts;
+  DoubleVector knots_u, knots_v;
+  std::vector<float> fknots_u, fknots_v, linear_cpts;
   int nu, nv;
   PointVector control_net;
   bool show_control_net, high_quality_textures;

@@ -14,6 +14,8 @@
 #include <vector>
 
 typedef std::vector<std::string> StringVector;
+typedef std::vector<double> DoubleVector;
+typedef std::vector<DoubleVector> DoubleMatrix;
 
 class Vector {
 public:
@@ -56,6 +58,7 @@ private:
 
 typedef std::vector<Vector> VectorVector;
 typedef VectorVector::iterator VectorIterator;
+typedef std::vector<VectorVector> VectorMatrix;
 
 class Point {
 public:
@@ -80,6 +83,7 @@ private:
   
 typedef std::vector<Point> PointVector;
 typedef PointVector::iterator PointIterator;
+typedef std::vector<PointVector> PointMatrix;
 
 typedef double Value;
 typedef std::vector<Value> ValueVector;
