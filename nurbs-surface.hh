@@ -24,6 +24,7 @@ public:
     if(v != POINTS && v != WIREFRAME)
       vis = v;
   }
+  void calculateLargeMaps();
   void increaseDensity();
   void decreaseDensity();
   void display(Point const &eye_pos, bool high_density);
@@ -32,20 +33,21 @@ private:
   static bool isCloseParen(std::ifstream &in);
   static double readLispFloat(std::ifstream &in);
   static void ignoreWhitespaces(std::ifstream &in);
-  void generateTexture(GLuint &name,
-		       void (NurbsSurface::*fn)(unsigned char *) const);
-  void generateIsophoteTexture(unsigned char *data) const;
+  static void texturePrologue(GLuint &name);
+  void generateIsophoteTexture(GLuint &name) const;
+  void generateEvaluatedTextures(bool only_slicing);
 
   int degree_u, degree_v, texture_width, texture_height;
-  double isophote_width;
+  double isophote_width, slicing_density;
   std::vector<float> knots_u, knots_v, linear_cpts;
   int nu, nv;
   PointVector control_net;
-  bool show_control_net;
+  bool show_control_net, high_quality_textures;
   GLUnurbsObj *globj, *gltextobj;
   GLuint mean_texture, gauss_texture, isophote_texture, slicing_texture;
   static GLuint default_isophote_texture;
   GLfloat texknots_u[4], texknots_v[4];
+  static int const texture_width_low, texture_height_low;
   static GLfloat texcpts[2][2][2];
 };
 

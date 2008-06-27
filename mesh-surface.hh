@@ -23,10 +23,9 @@ public:
   void display(Point const &eye_pos, bool high_density);
 private:
   void approximateNormalsAndCurvatures();
-  void isophoteColor(Point const &p, Vector const &n, double d,
-		     Point const &eye_pos);
-  void slicingColor(Point const &p, double d, Point const &eye_pos);
-  void rainbowColor(double value, double min, double max);
+  void isophoteColor(Point const &p, Vector const &n, Point const &eye_pos);
+  void slicingColor(Point const &p, Point const &eye_pos);
+  static void rainbowColor(double value, double min, double max);
 
   size_t decimation;
   size_t resx, resy;

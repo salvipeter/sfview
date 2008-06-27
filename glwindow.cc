@@ -235,11 +235,6 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
     std::cout << activeName(true) << ": points" << std::endl;
     display();
     break;
-  case 'w' :
-    changeVisualization(WIREFRAME);
-    std::cout << activeName(true) << ": wireframe" << std::endl;
-    display();
-    break;
   case 'r' :
     std::cout << "Reloading " << activeName(false) << "..." << std::endl;
     if(active != 0) {
@@ -260,6 +255,19 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
       }
     }
     std::cout << "Reloading done." << std::endl;
+    display();
+    break;
+  case 'w' :
+    changeVisualization(WIREFRAME);
+    std::cout << activeName(true) << ": wireframe" << std::endl;
+    display();
+    break;
+  case 'y' :
+    if(active != 0)
+      surfaces[active - 1]->calculateLargeMaps();
+    else
+      for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
+	(*i)->calculateLargeMaps();
     display();
     break;
   case '+' :

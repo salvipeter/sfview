@@ -95,7 +95,7 @@ bool MeshSurface::load(std::string const &filename, SurfacePVector &sv,
 
 MeshSurface::MeshSurface(std::ifstream &in, size_t max_n_of_quads) :
   isophote_width(2.0),
-  slicing_density(0.5)
+  slicing_density(0.125)
 {
   Point p;
 
@@ -157,7 +157,7 @@ void MeshSurface::decreaseDensity()
   }
 }
 
-void MeshSurface::isophoteColor(Point const &p, Vector const &n, double d,
+void MeshSurface::isophoteColor(Point const &p, Vector const &n,
 				Point const &eye_pos)
 {
   double const angle = std::acos((eye_pos - p).normalized() * n) * 180.0 / M_PI;
@@ -167,12 +167,9 @@ void MeshSurface::isophoteColor(Point const &p, Vector const &n, double d,
     glColor3d(1.0, 1.0, 1.0);
 }
 
-void MeshSurface::slicingColor(Point const &p, double d, Point const &eye_pos)
+void MeshSurface::slicingColor(Point const &p, Point const &eye_pos)
 {
-  Vector posvec(p[0], p[1], p[2]);
-  Vector direction = Vector(eye_pos[0], eye_pos[1], eye_pos[2]).normalized();
-
-  if((int)(posvec * direction * d) % 2 == 0)
+  if((int)((p - Point(0, 0, 0)) * slicing_direction * slicing_density) % 2 == 0)
     glColor3d(1.0, 0.0, 0.0);
   else
     glColor3d(0.0, 0.0, 1.0);
@@ -258,32 +255,32 @@ void MeshSurface::display(Point const &eye_pos, bool high_density)
 	break;
       case ISOPHOTE :
 	glBegin(GL_QUADS);
-	isophoteColor(p[i1], n[i1], isophote_width, eye_pos);
+	isophoteColor(p[i1], n[i1], eye_pos);
 	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
-	isophoteColor(p[i2], n[i2], isophote_width, eye_pos);
+	isophoteColor(p[i2], n[i2], eye_pos);
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
-	isophoteColor(p[i3], n[i3], isophote_width, eye_pos);
+	isophoteColor(p[i3], n[i3], eye_pos);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
-	isophoteColor(p[i4], n[i4], isophote_width, eye_pos);
+	isophoteColor(p[i4], n[i4], eye_pos);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
 	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
 	glEnd();
 	break;
       case SLICING :
 	glBegin(GL_QUADS);
-	slicingColor(p[i1], slicing_density, eye_pos);
+	slicingColor(p[i1], eye_pos);
 	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
-	slicingColor(p[i2], slicing_density, eye_pos);
+	slicingColor(p[i2], eye_pos);
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
-	slicingColor(p[i3], slicing_density, eye_pos);
+	slicingColor(p[i3], eye_pos);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
-	slicingColor(p[i4], slicing_density, eye_pos);
+	slicingColor(p[i4], eye_pos);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
 	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
 	glEnd();
@@ -295,6 +292,7 @@ void MeshSurface::display(Point const &eye_pos, bool high_density)
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
+	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glEnd();
 	break;
       case POINTS :

@@ -24,6 +24,7 @@ public:
   Box boundingBox() const { return bounding_box; }
   Visualization visualization() const { return vis; }
   virtual void setVisualization(Visualization const v) = 0;
+  virtual void calculateLargeMaps() { }
   bool isHidden() const { return hidden; }
   void toggleHidden() { hidden = !hidden; }
   bool noError() const { return !error; }
