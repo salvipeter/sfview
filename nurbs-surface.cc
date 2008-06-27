@@ -56,7 +56,7 @@ void NurbsSurface::ignoreWhitespaces(std::ifstream &in)
 }
 
 NurbsSurface::NurbsSurface(std::ifstream &in) :
-  Surface(), show_control_net(false)
+  Surface(), isophote_width(5.0), show_control_net(false)
 {
   std::string s;
   float x, y, z;
@@ -131,7 +131,7 @@ NurbsSurface::~NurbsSurface()
 {
 //   glDeleteTextures(1, &mean_texture);
 //   glDeleteTextures(1, &gauss_texture);
-//   glDeleteTextures(1, &default_isophote_texture);
+  glDeleteTextures(1, &default_isophote_texture); // deleted multiple times...
   glDeleteTextures(1, &isophote_texture);
 //   glDeleteTextures(1, &slicing_texture);
 }
@@ -160,45 +160,25 @@ bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv,
   return !error;
 }
 
-void NurbsSurface::GLInit()
+void NurbsSurface::
+generateTexture(GLuint &name, void (NurbsSurface::*fn)(unsigned char *) const)
 {
-  globj = gluNewNurbsRenderer();
-  // The NURBS surface has to be very precise
-  gluNurbsProperty(globj, GLU_SAMPLING_METHOD, GLU_PARAMETRIC_ERROR);
-  gluNurbsProperty(globj, GLU_PARAMETRIC_TOLERANCE, 0.5);
-  // Not-so-precise version:
-//   gluNurbsProperty(globj, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
-//   gluNurbsProperty(globj, GLU_SAMPLING_TOLERANCE, 20.0);
-
-  gltextobj = gluNewNurbsRenderer();
-
-  std::cout << "Generating textures... " << std::flush;
-
-  texknots_u[0] = texknots_u[1] = knots_u[degree_u];
-  texknots_u[2] = texknots_u[3] = knots_u[knots_u.size() - degree_u - 1];
-  texknots_v[0] = texknots_v[1] = knots_v[degree_v];
-  texknots_v[2] = texknots_v[3] = knots_v[knots_v.size() - degree_v - 1];
-
-//   void generateTexture(GLuint &name, void (NurbsSurface::*)(void) const fn);
-
-//   if(default_isophote_texture == 0)
-//     generateTexture(default_isophote_texture, generateIsophoteTexture);
-//   isophote_texture = default_isophote_texture;
-
-  // update:
-//   if(isophote_texture != default_isophote_texture)
-//     glDeleteTextures(1, &isophote_texture);
-//   generateTexture(isophote_texture, generateIsophoteTexture);
-
-  glGenTextures(1, &isophote_texture);
-  glBindTexture(GL_TEXTURE_2D, isophote_texture);
+  glGenTextures(1, &name);
+  glBindTexture(GL_TEXTURE_2D, name);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   unsigned char *data = new unsigned char[texture_width * texture_height * 3];
-  double const isophote_width = 5.0;
+  (this->*fn)(data);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height,
+	       0, GL_RGB, GL_UNSIGNED_BYTE, data);
+  delete[] data;  
+}
+
+void NurbsSurface::generateIsophoteTexture(unsigned char *data) const
+{
   // Sphere mapping gives the 3-dimensional reflection (unit) vector
   // in 2-dimensional form: let m = 2sqrt(x^2+y^2+(1+z)^2), then
   // the coordinates are (x/m+0.5, y/m+0.5).
@@ -229,22 +209,60 @@ void NurbsSurface::GLInit()
       }
     }
   }
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height,
-	       0, GL_RGB, GL_UNSIGNED_BYTE, data);
-  delete[] data;
+}
+
+void NurbsSurface::GLInit()
+{
+  globj = gluNewNurbsRenderer();
+  gluNurbsProperty(globj, GLU_SAMPLING_TOLERANCE, 50.0);  // low quality
+  gluNurbsProperty(globj, GLU_PARAMETRIC_TOLERANCE, 0.05); // high quality
+
+  gltextobj = gluNewNurbsRenderer();
+
+  std::cout << "Generating textures... " << std::flush;
+
+  texknots_u[0] = texknots_u[1] = knots_u[degree_u];
+  texknots_u[2] = texknots_u[3] = knots_u[knots_u.size() - degree_u - 1];
+  texknots_v[0] = texknots_v[1] = knots_v[degree_v];
+  texknots_v[2] = texknots_v[3] = knots_v[knots_v.size() - degree_v - 1];
+
+  if(default_isophote_texture == 0)
+    generateTexture(default_isophote_texture,
+		    &NurbsSurface::generateIsophoteTexture);
+  isophote_texture = default_isophote_texture;
 
   std::cout << "ok" << std::endl;
 }
 
 void NurbsSurface::increaseDensity()
 {
+  switch(vis) {
+  case SLICING: break;
+  case ISOPHOTE:
+    isophote_width /= 2.0;
+    if(isophote_texture != default_isophote_texture)
+      glDeleteTextures(1, &isophote_texture);
+    generateTexture(isophote_texture, &NurbsSurface::generateIsophoteTexture);
+    break;
+  default: ;
+  }
 }
 
 void NurbsSurface::decreaseDensity()
 {
+  switch(vis) {
+  case SLICING: break;
+  case ISOPHOTE:
+    isophote_width *= 2.0;
+    if(isophote_texture != default_isophote_texture)
+      glDeleteTextures(1, &isophote_texture);
+    generateTexture(isophote_texture, &NurbsSurface::generateIsophoteTexture);
+    break;
+  default: ;
+  }
 }
 
-void NurbsSurface::display(Point const &eye_pos, bool)
+void NurbsSurface::display(Point const &eye_pos, bool high_density)
 {
   if(show_control_net) {
     glDisable(GL_LIGHTING);
@@ -274,6 +292,11 @@ void NurbsSurface::display(Point const &eye_pos, bool)
 
   if(hidden)
     return;
+
+  if(high_density)
+    gluNurbsProperty(globj, GLU_SAMPLING_METHOD, GLU_PARAMETRIC_ERROR);
+  else
+    gluNurbsProperty(globj, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
 
   if(vis != SHADED)
     glEnable(GL_TEXTURE_2D);

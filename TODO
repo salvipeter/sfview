@@ -2,7 +2,7 @@
 
 * Better visualization of NURBS surfaces
 - Slicing, mean and gauss maps
-- Density change for isophote and slicing
+- Density change for slicing
 * Lighting problems of mesh files (reversed normals, lack of shadows)
 * Other input file formats (e.g. STL, IGES)
 * Other output file formats (e.g. PNG)
