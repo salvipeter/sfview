@@ -1,9 +1,10 @@
 			-*- mode: org -*-
 
 * Better visualization of NURBS surfaces
-- Slicing, mean and gauss maps
-* Lighting problems of mesh files (reversed normals, lack of shadows)
+- Mean and gauss maps
 * Other input file formats (e.g. STL, IGES)
 * Other output file formats (e.g. PNG with transparent background)
 * Gauss/mean histograms
+* Lighting problems of mesh files (reversed normals, lack of shadows)
+* Slicing map vibrates (?)
 * Speedup

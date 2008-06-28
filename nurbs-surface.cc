@@ -11,9 +11,13 @@
 
 #include "nurbs-surface.hh"
 
+// Fix parameters
 int const NurbsSurface::texture_width_low = 128;
 int const NurbsSurface::texture_height_low = 128;
+int const NurbsSurface::isophote_map_size = 1024;
+int const NurbsSurface::slicing_map_size = 16;
 GLuint NurbsSurface::default_isophote_texture = 0;
+GLuint NurbsSurface::slicing_texture = 0;
 
 GLfloat NurbsSurface::texcpts[2][2][2] =
   { {{0.0, 0.0}, {0.0, 1.0}}, {{1.0, 0.0}, {1.0, 1.0}} };
@@ -137,12 +141,16 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
 
 NurbsSurface::~NurbsSurface()
 {
-  // default_isophote_texture may be deleted multiple times, but that's OK.
+  // default_isophote_texture and slicing_texture may be deleted
+  // multiple times, but that's OK.
   glDeleteTextures(1, &default_isophote_texture);
   glDeleteTextures(1, &isophote_texture);
   glDeleteTextures(1, &gauss_texture);
   glDeleteTextures(1, &mean_texture);
   glDeleteTextures(1, &slicing_texture);
+  // Set these to 0 to be automatically regenerated when needed.
+  default_isophote_texture = 0;
+  slicing_texture = 0;
 }
 
 bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv,
@@ -183,7 +191,8 @@ void NurbsSurface::texturePrologue(GLuint &name)
 void NurbsSurface::generateIsophoteTexture(GLuint &name) const
 {
   texturePrologue(name);
-  unsigned char *data = new unsigned char[texture_width * texture_height * 3];
+  int const &w = isophote_map_size, &h = isophote_map_size;
+  unsigned char *data = new unsigned char[w * h * 3];
 
   // Sphere mapping gives the 3-dimensional reflection (unit) vector
   // in 2-dimensional form: let m = 2sqrt(x^2+y^2+(1+z)^2), then
@@ -194,10 +203,10 @@ void NurbsSurface::generateIsophoteTexture(GLuint &name) const
   // coordinates.
   // Using the equation x^2+y^2+z^2=1, it turns out that
   //   m^2 = 64 * (1/4 - (x/m)^2 - (y/m)^2).
-  for(int i = 0, index = 0; i < texture_width; ++i) {
-    double const xm = (double)i / (double)(texture_width - 1) - 0.5;
-    for(int j = 0; j < texture_height; ++j) {
-      double const ym = (double)j / (double)(texture_height - 1) - 0.5;
+  for(int i = 0, index = 0; i < w; ++i) {
+    double const xm = (double)i / (double)(w - 1) - 0.5;
+    for(int j = 0; j < h; ++j) {
+      double const ym = (double)j / (double)(h - 1) - 0.5;
       double const length2 = xm * xm + ym * ym;
       if(length2 <= 0.25) {
 	double const m2 = 64.0 * (0.25 - length2);
@@ -216,62 +225,65 @@ void NurbsSurface::generateIsophoteTexture(GLuint &name) const
     }
   }
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height,
-	       0, GL_RGB, GL_UNSIGNED_BYTE, data);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
+	       data);
   delete[] data;  
 }
 
-void NurbsSurface::generateEvaluatedTextures(bool only_slicing = false)
+void NurbsSurface::generateSlicingTexture()
+{
+  // Create a 1-dimensional map with its left half red, right half blue.
+  // This will be repeatedly used with the GL_OBJECT_LINEAR map, that
+  // selects a position in the map according to the point's distance
+  // from a reference plane (= the eye plane in our case).
+  int const &w = slicing_map_size;
+  unsigned char *data = new unsigned char[w * 3];
+  glGenTextures(1, &slicing_texture);
+  glBindTexture(GL_TEXTURE_1D, slicing_texture);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  int index = 0;
+  for(int i = 0; i < w; ++i) {
+    bool color = i < w/2;
+    data[index++] = color ? 255 : 0;
+    data[index++] = 0;
+    data[index++] = color ? 0 : 255;
+  }
+  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, w, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+}
+
+void NurbsSurface::generateEvaluatedTextures()
 {
   int const w = high_quality_textures ? texture_width : texture_width_low;
   int const h = high_quality_textures ? texture_height : texture_height_low;
   int index;
   unsigned char *data = new unsigned char[w * h * 3];
 
-  VectorMatrix points(w, VectorVector(h));
-
   // Compute points, derivatives and curvatures
   double const lu = lowerBoundU(), uu = upperBoundU();
   double const lv = lowerBoundV(), uv = upperBoundV();
   for(int i = 0; i < w; ++i) {
+    if(high_quality_textures && (i+1) % (w/10) == 0)
+      std::cout << '.' << std::flush;
     double const u = interpolate(lu, (double)i / (double)(w - 1), uu);
     for(int j = 0; j < h; ++j) {
       double const v = interpolate(lv, (double)j / (double)(h - 1), uv);
-      VectorMatrix const deriv = derivatives(u, v, 0);
-      points[i][j] = deriv[0][0];
+      VectorMatrix const deriv = derivatives(u, v, 2);
+      // ...
     }
   }
 
-  if(!only_slicing) {
-
-    // gauss
-    index = 0;
-    texturePrologue(gauss_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
-		 data);
-
-    // mean
-    index = 0;
-    texturePrologue(mean_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
-		 data);
-
-  }
-
-  // slicing
-  texturePrologue(slicing_texture);
+  // gauss
   index = 0;
-  std::ofstream f("test.data");
-  for(int i = 0; i < w; ++i)
-    for(int j = 0; j < h; ++j) {
-      f << points[i][j][0] << " " << points[i][j][1] << " " << points[i][j][2] << std::endl;
-      bool color =
-	(int)(points[i][j] * slicing_direction * slicing_density) % 2 == 0;
-      data[index++] = color ? 255 : 0;
-      data[index++] = 0;
-      data[index++] = color ? 0 : 255;
-    }
-  f.close();
+  texturePrologue(gauss_texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
+	       data);
+
+  // mean
+  index = 0;
+  texturePrologue(mean_texture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
 	       data);
 
@@ -297,6 +309,9 @@ void NurbsSurface::GLInit()
     generateIsophoteTexture(default_isophote_texture);
   isophote_texture = default_isophote_texture;
 
+  if(slicing_texture == 0)
+    generateSlicingTexture();
+
   generateEvaluatedTextures();
 
   std::cout << "ok" << std::endl;
@@ -307,20 +322,16 @@ void NurbsSurface::calculateLargeMaps()
   if(!high_quality_textures) {
     high_quality_textures = true;
 
-    std::cout << "Generating high quality textures... " << std::flush;
+    std::cout << "Generating high quality textures" << std::flush;
     generateEvaluatedTextures();
-    std::cout << "ok" << std::endl;
+    std::cout << " ok" << std::endl;
   }
 }
 
 void NurbsSurface::increaseDensity()
 {
   switch(vis) {
-  case SLICING:
-    slicing_density *= 2.0;
-    glDeleteTextures(1, &slicing_texture);
-    generateEvaluatedTextures(true);
-    break;
+  case SLICING: slicing_density *= 2.0; break;
   case ISOPHOTE:
     isophote_width /= 2.0;
     if(isophote_texture != default_isophote_texture)
@@ -334,11 +345,7 @@ void NurbsSurface::increaseDensity()
 void NurbsSurface::decreaseDensity()
 {
   switch(vis) {
-  case SLICING:
-    slicing_density /= 2.0;
-    glDeleteTextures(1, &slicing_texture);
-    generateEvaluatedTextures(true);
-    break;
+  case SLICING: slicing_density /= 2.0; break;
   case ISOPHOTE:
     isophote_width *= 2.0;
     if(isophote_texture != default_isophote_texture)
@@ -349,7 +356,8 @@ void NurbsSurface::decreaseDensity()
   }
 }
 
-void NurbsSurface::display(Point const &eye_pos, bool high_density)
+void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
+			   bool high_density)
 {
   if(show_control_net) {
     glDisable(GL_LIGHTING);
@@ -386,20 +394,29 @@ void NurbsSurface::display(Point const &eye_pos, bool high_density)
   else
     gluNurbsProperty(globj, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
 
-  if(vis != SHADED)
-    glEnable(GL_TEXTURE_2D);
-
+  GLfloat plane[4];
   switch(vis) {
   case MEAN: glBindTexture(GL_TEXTURE_2D, mean_texture); break;
   case GAUSS: glBindTexture(GL_TEXTURE_2D, gauss_texture); break;
   case ISOPHOTE:
+    glEnable(GL_TEXTURE_2D);
     glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
     glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
     glEnable(GL_TEXTURE_GEN_S);
-    glEnable(GL_TEXTURE_GEN_T);	
+    glEnable(GL_TEXTURE_GEN_T);
     glBindTexture(GL_TEXTURE_2D, isophote_texture);
     break;
-  case SLICING: glBindTexture(GL_TEXTURE_2D, slicing_texture); break;
+  case SLICING:
+    glEnable(GL_TEXTURE_1D);
+    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+    plane[0] = eye_dir[0] * slicing_density;
+    plane[1] = eye_dir[1] * slicing_density;
+    plane[2] = eye_dir[2] * slicing_density;
+    plane[3] = -(eye_dir * (eye_pos - Point(0.0, 0.0, 0.0)));
+    glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
+    glEnable(GL_TEXTURE_GEN_S);
+    glBindTexture(GL_TEXTURE_1D, slicing_texture);
+    break;
   default: ;
   }
 
@@ -407,9 +424,9 @@ void NurbsSurface::display(Point const &eye_pos, bool high_density)
   glEnable(GL_AUTO_NORMAL);
   glEnable(GL_NORMALIZE);
   gluBeginSurface(globj);
-  if(vis != SHADED)
-    gluNurbsSurface(gltextobj, 4, &texknots_u[0], 4, &texknots_v[0], 2 * 2, 2,
-		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
+//   if(vis != SHADED)
+//     gluNurbsSurface(gltextobj, 4, &texknots_u[0], 4, &texknots_v[0], 2 * 2, 2,
+// 		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
   glColor3d(1.0, 1.0, 1.0);
   gluNurbsSurface(globj,
 		  fknots_u.size(), &fknots_u[0],
@@ -421,13 +438,19 @@ void NurbsSurface::display(Point const &eye_pos, bool high_density)
   glDisable(GL_NORMALIZE);
   glDisable(GL_AUTO_NORMAL);
 
-  if(vis == ISOPHOTE) {
+  switch(vis) {
+  case MEAN:
+  case GAUSS: break;
+  case ISOPHOTE:
     glDisable(GL_TEXTURE_GEN_S);
     glDisable(GL_TEXTURE_GEN_T);
-  }
-
-  if(vis != SHADED)
     glDisable(GL_TEXTURE_2D);
+    break;
+  case SLICING:
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_1D);
+  default: ;
+  }
 }
 
 // Evaluation as in The NURBS Book, algorithms A2.1, A2.3, A3.6.
@@ -436,7 +459,7 @@ int NurbsSurface::findSpan(DoubleVector const &knots, double t, int n)
 {
   if(t == knots[n])
     return n - 1;
-  return std::upper_bound(knots.begin(), knots.end(), t) - knots.begin();
+  return std::upper_bound(knots.begin(), knots.end(), t) - knots.begin() - 1;
 }
 
 DoubleMatrix NurbsSurface::basisDerivatives(DoubleVector const &knots,
@@ -518,7 +541,6 @@ VectorMatrix NurbsSurface::derivatives(double u, double v, int d) const
       }
     int const dd = std::min(d - k, dv);
     for(int l = 0; l <= dd; ++l) {
-      ders[k][l] = 0.0;
       for(int s = 0; s <= q; ++s)
 	ders[k][l] = ders[k][l] + temp[s] * nders_v[l][s];
     }

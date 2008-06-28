@@ -32,7 +32,7 @@ std::string const GLWindow::help_string =
   "                               2500 by default.\n"
   "  -t, --texture-size=WIDTHxHEIGHT\n"
   "                             Texture map size for B-Spline surfaces.\n"
-  "                               1024x1024 by default.\n"
+  "                               512x512 by default.\n"
   "  -v, --version              Print version information and exit."
   "\n\n"
   "See the man page for more information."
@@ -51,7 +51,7 @@ double const GLWindow::znear_coefficient = 0.4;
 double const GLWindow::zfar_coefficient = 1.7;
 
 GLWindow::GLWindow() :
-  width(800), height(600), texture_width(1024), texture_height(1024),
+  width(800), height(600), texture_width(512), texture_height(512),
   max_n_of_quads(2500), high_density(false),
   active(0), next_id(-1), mouse_mode(NOTHING)
 {
@@ -152,8 +152,9 @@ void GLWindow::display()
 	    center[0], center[1], center[2],
 	    up[0], up[1], up[2]);
 
+  Vector const eye_dir = (center - eye).normalized();
   for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
-    (*i)->display(eye, mouse_mode == NOTHING && high_density);
+    (*i)->display(eye, eye_dir, mouse_mode == NOTHING && high_density);
 
   glFlush();
   glutSwapBuffers();

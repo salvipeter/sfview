@@ -167,9 +167,10 @@ void MeshSurface::isophoteColor(Point const &p, Vector const &n,
     glColor3d(1.0, 1.0, 1.0);
 }
 
-void MeshSurface::slicingColor(Point const &p, Point const &eye_pos)
+void MeshSurface::slicingColor(Point const &p, Point const &eye_pos,
+			       Vector const &eye_dir)
 {
-  if((int)((p - Point(0, 0, 0)) * slicing_direction * slicing_density) % 2 == 0)
+  if((int)((p - Point(0, 0, 0)) * eye_dir * slicing_density) % 2 == 0)
     glColor3d(1.0, 0.0, 0.0);
   else
     glColor3d(0.0, 0.0, 1.0);
@@ -181,7 +182,8 @@ void MeshSurface::rainbowColor(double value, double min, double max)
   glColor3d(d, 1.0 - d, 0.0);
 }
 
-void MeshSurface::display(Point const &eye_pos, bool high_density)
+void MeshSurface::display(Point const &eye_pos, Vector const &eye_dir,
+			  bool high_density)
 {
   if(hidden)
     return;
@@ -271,16 +273,16 @@ void MeshSurface::display(Point const &eye_pos, bool high_density)
 	break;
       case SLICING :
 	glBegin(GL_QUADS);
-	slicingColor(p[i1], eye_pos);
+	slicingColor(p[i1], eye_pos, eye_dir);
 	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
-	slicingColor(p[i2], eye_pos);
+	slicingColor(p[i2], eye_pos, eye_dir);
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
-	slicingColor(p[i3], eye_pos);
+	slicingColor(p[i3], eye_pos, eye_dir);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
-	slicingColor(p[i4], eye_pos);
+	slicingColor(p[i4], eye_pos, eye_dir);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
 	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
 	glEnd();

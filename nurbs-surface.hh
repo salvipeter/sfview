@@ -27,7 +27,7 @@ public:
   void calculateLargeMaps();
   void increaseDensity();
   void decreaseDensity();
-  void display(Point const &eye_pos, bool high_density);
+  void display(Point const &eye_pos, Vector const &eye_dir, bool high_density);
 private:
   static void findOpenParen(std::ifstream &in);
   static bool isCloseParen(std::ifstream &in);
@@ -35,11 +35,12 @@ private:
   static void ignoreWhitespaces(std::ifstream &in);
   static void texturePrologue(GLuint &name);
   void generateIsophoteTexture(GLuint &name) const;
-  void generateEvaluatedTextures(bool only_slicing);
+  static void generateSlicingTexture();
+  void generateEvaluatedTextures();
   double lowerBoundU() { return knots_u[degree_u]; }
-  double upperBoundU() { return knots_u[knots_u.size() - degree_u - 1]; }
+  double upperBoundU() { return knots_u[nu]; }
   double lowerBoundV() { return knots_v[degree_v]; }
-  double upperBoundV() { return knots_v[knots_v.size() - degree_v - 1]; }
+  double upperBoundV() { return knots_v[nv]; }
   static int findSpan(DoubleVector const &knots, double t, int n);
   static DoubleMatrix basisDerivatives(DoubleVector const &knots,
 				       int i, int p, double u, int n);
@@ -53,10 +54,11 @@ private:
   PointVector control_net;
   bool show_control_net, high_quality_textures;
   GLUnurbsObj *globj, *gltextobj;
-  GLuint mean_texture, gauss_texture, isophote_texture, slicing_texture;
-  static GLuint default_isophote_texture;
+  GLuint mean_texture, gauss_texture, isophote_texture;
+  static GLuint default_isophote_texture, slicing_texture;
   GLfloat texknots_u[4], texknots_v[4];
   static int const texture_width_low, texture_height_low;
+  static int const isophote_map_size, slicing_map_size;
   static GLfloat texcpts[2][2][2];
 };
 

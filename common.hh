@@ -91,6 +91,4 @@ typedef ValueVector::iterator ValueIterator;
 
 typedef std::pair<Point, Point> Box;
 
-Vector const slicing_direction(0.0, 0.0, 1.0);
-
 #endif // COMMON_HH

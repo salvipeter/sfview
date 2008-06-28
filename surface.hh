@@ -31,7 +31,8 @@ public:
 
   virtual void increaseDensity() = 0;
   virtual void decreaseDensity() = 0;
-  virtual void display(Point const &eye_pos, bool high_density) = 0;
+  virtual void display(Point const &eye_pos, Vector const &eye_dir,
+		       bool high_density) = 0;
 protected:
   std::string filename;
   Box bounding_box;
