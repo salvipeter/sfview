@@ -527,6 +527,9 @@ void GLWindow::setClippingPlanes()
   znear *= znear_coefficient;
   zfar *= zfar_coefficient;
 
+  if(znear < 0.0)		// It should be positive, but we have no
+    znear = 0.0;		// better alternative...
+
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective(view_angle, object_width, znear, zfar);

@@ -1,7 +1,6 @@
 			-*- mode: org -*-
 
 * A better density guess for slicing (NURBS)
-* Better near clipping plane
 * Other input file formats (e.g. STL, IGES)
 * Other output file formats (e.g. PNG with transparent background)
 * Gauss/mean tuning
