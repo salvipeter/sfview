@@ -19,7 +19,8 @@ Print help information and exit.
 Maximum number of quads in low-density mode. 2500 by default.
 .TP
 .BI "\-t, \-\-texture\-size=" WIDTHxHEIGHT
-Texture map size for B-Spline surfaces. 512x512 by default.
+Texture size of the curvature maps for B-Spline surfaces.
+256x256 by default.
 .TP
 .B \-v, \-\-version
 Print version information and exit.
@@ -67,7 +68,7 @@ Changes the visualization of the surface to wireframe [Q].
 Calculates the high-quality textures for the gauss and mean
 maps [B]. The texture size can be set with the
 .B \-t
-option. The size of low-quality textures is 128x128.
+option. The size of low-quality textures is 64x64.
 .TP
 .B +
 Increases the density of the surface's isophote/slicing lines.

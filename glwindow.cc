@@ -31,8 +31,8 @@ std::string const GLWindow::help_string =
   "  -q, --quads=NUMBER         Maximum number of quads in low-density mode.\n"
   "                               2500 by default.\n"
   "  -t, --texture-size=WIDTHxHEIGHT\n"
-  "                             Texture map size for B-Spline surfaces.\n"
-  "                               512x512 by default.\n"
+  "                             Texture size of the curvature maps for\n"
+  "                               B-Spline surfaces. 256x256 by default.\n"
   "  -v, --version              Print version information and exit."
   "\n\n"
   "See the man page for more information."
@@ -51,7 +51,7 @@ double const GLWindow::znear_coefficient = 0.4;
 double const GLWindow::zfar_coefficient = 1.7;
 
 GLWindow::GLWindow() :
-  width(800), height(600), texture_width(512), texture_height(512),
+  width(800), height(600), texture_width(256), texture_height(256),
   max_n_of_quads(2500), high_density(false),
   active(0), next_id(-1), mouse_mode(NOTHING)
 {

@@ -175,8 +175,8 @@ void MeshSurface::slicingColor(Point const &p, Point const &eye_pos,
 
 void MeshSurface::rainbowColor(double value, double min, double max)
 {
-  double const d = (value - min) / (max - min);
-  glColor3d(d, 1.0 - d, 0.0);
+  double const d = 2.0 * (value - min) / (max - min);
+  glColor3d(std::max(d - 1, 0.0), 1 - std::abs(d - 1), std::max(1 - d, 0.0));
 }
 
 void MeshSurface::display(Point const &eye_pos, Vector const &eye_dir,

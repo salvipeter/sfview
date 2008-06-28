@@ -36,6 +36,8 @@ private:
   static void texturePrologue(GLuint &name);
   void generateIsophoteTexture(GLuint &name) const;
   static void generateSlicingTexture();
+  static void fillRainbow(DoubleMatrix const &m, int w, int h,
+			  unsigned char *output);
   void generateEvaluatedTextures();
   double lowerBoundU() { return knots_u[degree_u]; }
   double upperBoundU() { return knots_u[nu]; }
@@ -53,7 +55,7 @@ private:
   int nu, nv;
   PointVector control_net;
   bool show_control_net, high_quality_textures;
-  GLUnurbsObj *globj, *gltextobj;
+  GLUnurbsObj *globj;
   GLuint mean_texture, gauss_texture, isophote_texture;
   static GLuint default_isophote_texture, slicing_texture;
   GLfloat texknots_u[4], texknots_v[4];

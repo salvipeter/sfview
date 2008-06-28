@@ -12,8 +12,8 @@
 #include "nurbs-surface.hh"
 
 // Fix parameters
-int const NurbsSurface::texture_width_low = 128;
-int const NurbsSurface::texture_height_low = 128;
+int const NurbsSurface::texture_width_low = 64;
+int const NurbsSurface::texture_height_low = 64;
 int const NurbsSurface::isophote_map_size = 1024;
 int const NurbsSurface::slicing_map_size = 16;
 GLuint NurbsSurface::default_isophote_texture = 0;
@@ -254,12 +254,36 @@ void NurbsSurface::generateSlicingTexture()
   glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, w, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 }
 
+void NurbsSurface::fillRainbow(DoubleMatrix const &m, int w, int h,
+			       unsigned char *output)
+{
+  double min = m[0][0], max = m[0][0];
+  for(int i = 0; i < w; ++i)
+    for(int j = 0; j < h; ++j)
+      if(m[i][j] < min)
+	min = m[i][j];
+      else if(m[i][j] > max)
+	max = m[i][j];
+  double const len = max - min;
+
+  int index = 0;
+  for(int j = 0; j < h; ++j)
+    for(int i = 0; i < w; ++i) {
+      int const color =
+	static_cast<int>(interpolate(0, (m[i][j] - min) / len, 510));
+      output[index++] = static_cast<unsigned char>(std::max(color - 255, 0));
+      output[index++] = static_cast<unsigned char>(255 - std::abs(color - 255));
+      output[index++] = static_cast<unsigned char>(std::max(255 - color, 0));
+    }
+}
+
 void NurbsSurface::generateEvaluatedTextures()
 {
   int const w = high_quality_textures ? texture_width : texture_width_low;
   int const h = high_quality_textures ? texture_height : texture_height_low;
-  int index;
   unsigned char *data = new unsigned char[w * h * 3];
+  DoubleMatrix gauss(w, DoubleVector(h));
+  DoubleMatrix mean(w, DoubleVector(h));
 
   // Compute points, derivatives and curvatures
   double const lu = lowerBoundU(), uu = upperBoundU();
@@ -271,23 +295,30 @@ void NurbsSurface::generateEvaluatedTextures()
     for(int j = 0; j < h; ++j) {
       double const v = interpolate(lv, (double)j / (double)(h - 1), uv);
       VectorMatrix const deriv = derivatives(u, v, 2);
-      // ...
+      Vector const normal = (deriv[1][0] ^ deriv[0][1]).normalized();
+      double const E = deriv[1][0] * deriv[1][0];
+      double const F = deriv[1][0] * deriv[0][1];
+      double const G = deriv[0][1] * deriv[0][1];
+      double const L = normal * deriv[2][0];
+      double const M = normal * deriv[1][1];
+      double const N = normal * deriv[0][2];
+      double const divisor = E * G - F * F;
+      gauss[i][j] = divisor == 0.0 ? 0.0 : (L * N - M * M) / divisor;
+      mean[i][j] = divisor == 0.0 ? 0.0 : (N*E - 2*M*F + L*G) / (2 * divisor);
     }
   }
 
-  // gauss
-  index = 0;
   texturePrologue(gauss_texture);
+  fillRainbow(gauss, w, h, data);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
 	       data);
 
-  // mean
-  index = 0;
   texturePrologue(mean_texture);
+  fillRainbow(mean, w, h, data);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE,
 	       data);
 
-  delete[] data;  
+  delete[] data;
 }
 
 void NurbsSurface::GLInit()
@@ -295,8 +326,7 @@ void NurbsSurface::GLInit()
   globj = gluNewNurbsRenderer();
   gluNurbsProperty(globj, GLU_SAMPLING_TOLERANCE, 50.0);  // low quality
   gluNurbsProperty(globj, GLU_PARAMETRIC_TOLERANCE, 0.05); // high quality
-
-  gltextobj = gluNewNurbsRenderer();
+  gluNurbsProperty(globj, GLU_CULLING, GL_TRUE);
 
   std::cout << "Generating textures... " << std::flush;
 
@@ -321,6 +351,9 @@ void NurbsSurface::calculateLargeMaps()
 {
   if(!high_quality_textures) {
     high_quality_textures = true;
+
+    glDeleteTextures(1, &gauss_texture);
+    glDeleteTextures(1, &mean_texture);
 
     std::cout << "Generating high quality textures" << std::flush;
     generateEvaluatedTextures();
@@ -396,8 +429,14 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
 
   GLfloat plane[4];
   switch(vis) {
-  case MEAN: glBindTexture(GL_TEXTURE_2D, mean_texture); break;
-  case GAUSS: glBindTexture(GL_TEXTURE_2D, gauss_texture); break;
+  case MEAN:
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, mean_texture);
+    break;
+  case GAUSS:
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, gauss_texture);
+    break;
   case ISOPHOTE:
     glEnable(GL_TEXTURE_2D);
     glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
@@ -424,9 +463,9 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
   glEnable(GL_AUTO_NORMAL);
   glEnable(GL_NORMALIZE);
   gluBeginSurface(globj);
-//   if(vis != SHADED)
-//     gluNurbsSurface(gltextobj, 4, &texknots_u[0], 4, &texknots_v[0], 2 * 2, 2,
-// 		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
+  if(vis == MEAN || vis == GAUSS)
+    gluNurbsSurface(globj, 4, &texknots_u[0], 4, &texknots_v[0], 2 * 2, 2,
+		    &texcpts[0][0][0], 2, 2, GL_MAP2_TEXTURE_COORD_2);
   glColor3d(1.0, 1.0, 1.0);
   gluNurbsSurface(globj,
 		  fknots_u.size(), &fknots_u[0],
@@ -440,7 +479,9 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
 
   switch(vis) {
   case MEAN:
-  case GAUSS: break;
+  case GAUSS:
+    glDisable(GL_TEXTURE_2D);
+    break;
   case ISOPHOTE:
     glDisable(GL_TEXTURE_GEN_S);
     glDisable(GL_TEXTURE_GEN_T);
