@@ -57,17 +57,14 @@ void MeshSurface::approximateNormalsAndCurvatures()
       double const L = normal * duu;
       double const M = normal * duv;
       double const N = normal * dvv;
-      double const m = N * E - 2 * F * M + L * G;
-      double const g = 2 * (L * N - M * M);
-      double const a = 2 * (E * G - F * F);
-      double const d = std::sqrt(m * m - a * g);
-      double const k1 = (m + d) / a;
-      double const k2 = (m - d) / a;
+      double const divisor = E * G - F * F;
+      double const gauss = divisor == 0.0 ? 0.0 : (L * N - M * M) / divisor;
+      double const mean = divisor == 0.0 ? 0.0 : (N*E-2*M*F+L*G)/(2*divisor);
 
       // OpenGL seems to want the opposite direction... strange
       normals.push_back(normal * -1.0);
-      Gauss_curvature.push_back(k1 * k2);
-      mean_curvature.push_back((k1 + k2) * 0.5);
+      Gauss_curvature.push_back(gauss);
+      mean_curvature.push_back(mean);
     }
   Gauss_min =
     *std::min_element(Gauss_curvature.begin(), Gauss_curvature.end());
@@ -178,7 +175,7 @@ void MeshSurface::slicingColor(Point const &p, Point const &eye_pos,
 
 void MeshSurface::rainbowColor(double value, double min, double max)
 {
-  double const d = std::min(std::max((value - min) / (max - min), min), max);
+  double const d = (value - min) / (max - min);
   glColor3d(d, 1.0 - d, 0.0);
 }
 
