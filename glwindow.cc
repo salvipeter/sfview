@@ -129,6 +129,8 @@ void GLWindow::show()
   Box b = surfaces.front()->boundingBox();
   for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
     b = boxUnion(b, (*i)->boundingBox());
+  for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
+    (*i)->setSlicingDensity((b.second - b.first).length() / 50);
   bounding_box = b;
   zoomToBoundingBox();
 

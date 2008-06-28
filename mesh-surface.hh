@@ -38,7 +38,6 @@ private:
   ValueVector mean_curvature;
   double mean_min;
   double mean_max;
-  double isophote_width, slicing_density;
 };
 
 #endif // MESH_SURFACE_HH

@@ -49,7 +49,6 @@ private:
   VectorMatrix derivatives(double u, double v, int d) const;
 
   int degree_u, degree_v, texture_width, texture_height;
-  double isophote_width, slicing_density;
   DoubleVector knots_u, knots_v;
   std::vector<float> fknots_u, fknots_v, linear_cpts;
   int nu, nv;

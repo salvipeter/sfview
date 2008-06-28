@@ -14,7 +14,7 @@ enum Visualization { SHADED, GAUSS, MEAN, ISOPHOTE,
 
 class Surface {
 public:
-  Surface() : vis(SHADED), hidden(false) { }
+  Surface() : vis(SHADED), isophote_width(5.0), hidden(false) { }
   virtual ~Surface() { }
   virtual void GLInit() { }
 
@@ -24,6 +24,7 @@ public:
   Box boundingBox() const { return bounding_box; }
   Visualization visualization() const { return vis; }
   virtual void setVisualization(Visualization const v) = 0;
+  void setSlicingDensity(double d) { slicing_density = d; }
   virtual void calculateLargeMaps() { }
   bool isHidden() const { return hidden; }
   void toggleHidden() { hidden = !hidden; }
@@ -37,6 +38,7 @@ protected:
   std::string filename;
   Box bounding_box;
   Visualization vis;
+  double isophote_width, slicing_density;
   bool hidden, error;
 };
 

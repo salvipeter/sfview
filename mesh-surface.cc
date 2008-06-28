@@ -91,8 +91,7 @@ bool MeshSurface::load(std::string const &filename, SurfacePVector &sv,
 }
 
 MeshSurface::MeshSurface(std::ifstream &in, size_t max_n_of_quads) :
-  isophote_width(2.0),
-  slicing_density(0.125)
+  Surface()
 {
   Point p;
 
@@ -139,7 +138,7 @@ MeshSurface::MeshSurface(std::ifstream &in, size_t max_n_of_quads) :
 void MeshSurface::increaseDensity()
 {
   switch(vis) {
-  case SLICING : slicing_density *= 2.0; break;
+  case SLICING : slicing_density /= 2.0; break;
   case ISOPHOTE : isophote_width /= 2.0; break;
   default: ;
   }
@@ -148,7 +147,7 @@ void MeshSurface::increaseDensity()
 void MeshSurface::decreaseDensity()
 {
   switch(vis) {
-  case SLICING : slicing_density /= 2.0; break;
+  case SLICING : slicing_density *= 2.0; break;
   case ISOPHOTE : isophote_width *= 2.0; break;
   default: ;
   }
@@ -167,7 +166,7 @@ void MeshSurface::isophoteColor(Point const &p, Vector const &n,
 void MeshSurface::slicingColor(Point const &p, Point const &eye_pos,
 			       Vector const &eye_dir)
 {
-  if((int)((p - Point(0, 0, 0)) * eye_dir * slicing_density) % 2 == 0)
+  if((int)((p - Point(0, 0, 0)) * eye_dir / slicing_density) % 2 == 0)
     glColor3d(1.0, 0.0, 0.0);
   else
     glColor3d(0.0, 0.0, 1.0);

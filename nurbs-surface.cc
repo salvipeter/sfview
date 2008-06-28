@@ -65,8 +65,7 @@ void NurbsSurface::ignoreWhitespaces(std::ifstream &in)
 }
 
 NurbsSurface::NurbsSurface(std::ifstream &in) :
-  Surface(), isophote_width(5.0), slicing_density(0.125),
-  show_control_net(false), high_quality_textures(false)
+  Surface(), show_control_net(false), high_quality_textures(false)
 {
   std::string s;
   float x, y, z;
@@ -133,6 +132,7 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
     if((*i)[1] > bounding_box.second[1]) bounding_box.second[1] = (*i)[1];
     if((*i)[2] > bounding_box.second[2]) bounding_box.second[2] = (*i)[2];
   }
+
   std::cout << "ok (" << bounding_box.first << " - "
 	    << bounding_box.second << ")" << std::endl;
 
@@ -364,7 +364,7 @@ void NurbsSurface::calculateLargeMaps()
 void NurbsSurface::increaseDensity()
 {
   switch(vis) {
-  case SLICING: slicing_density *= 2.0; break;
+  case SLICING: slicing_density /= 2.0; break;
   case ISOPHOTE:
     isophote_width /= 2.0;
     if(isophote_texture != default_isophote_texture)
@@ -378,7 +378,7 @@ void NurbsSurface::increaseDensity()
 void NurbsSurface::decreaseDensity()
 {
   switch(vis) {
-  case SLICING: slicing_density /= 2.0; break;
+  case SLICING: slicing_density *= 2.0; break;
   case ISOPHOTE:
     isophote_width *= 2.0;
     if(isophote_texture != default_isophote_texture)
@@ -448,9 +448,9 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
   case SLICING:
     glEnable(GL_TEXTURE_1D);
     glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-    plane[0] = eye_dir[0] * slicing_density;
-    plane[1] = eye_dir[1] * slicing_density;
-    plane[2] = eye_dir[2] * slicing_density;
+    plane[0] = eye_dir[0] / slicing_density;
+    plane[1] = eye_dir[1] / slicing_density;
+    plane[2] = eye_dir[2] / slicing_density;
     plane[3] = -(eye_dir * (eye_pos - Point(0.0, 0.0, 0.0)));
     glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
     glEnable(GL_TEXTURE_GEN_S);
