@@ -479,9 +479,6 @@ bool GLWindow::loadFile(std::string filename)
 void GLWindow::zoomToBoundingBox()
 {
   center = affineCombine(bounding_box.first, 0.5, bounding_box.second);
-  Vector const diagonal = bounding_box.second - bounding_box.first;
-
-  center = bounding_box.first + diagonal / 2.0;
   up = Vector(0.0, 1.0, 0.0);
 
   // Eye position is calculated from the bounding box and the view angle.
