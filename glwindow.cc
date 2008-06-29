@@ -354,9 +354,9 @@ void GLWindow::mouseMotion(int x, int y)
     eye = center + (eye - center) * (dy + 1.0);
     break;
   case PAN :
-    length = (eye - center).length() * tan(view_angle / 2.0) * 2.0;
+    length = (eye - center).length() * tan(view_angle * M_PI / 360.0) * 2.0;
     axis = (up ^ (center - eye)).normalized();
-    center = center + axis * dx * length;
+    center = center + axis * dx * length * object_width;
     center = center + up * dy * length;
     break;
   default: break;
