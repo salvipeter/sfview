@@ -202,15 +202,15 @@ void NurbsSurface::generateIsophoteTexture(GLuint &name) const
   // reflection vector, since the reflection vector is given in eye
   // coordinates.
   // Using the equation x^2+y^2+z^2=1, it turns out that
-  //   m^2 = 64 * (1/4 - (x/m)^2 - (y/m)^2).
+  //   m^2 = 64 * (1/4 - (x/m)^2 - (y/m)^2), from which
+  //   z = sqrt(m^2 * m^2/64) - 1 = m^2 / 8 - 1.
   for(int i = 0, index = 0; i < w; ++i) {
     double const xm = (double)i / (double)(w - 1) - 0.5;
     for(int j = 0; j < h; ++j) {
       double const ym = (double)j / (double)(h - 1) - 0.5;
       double const length2 = xm * xm + ym * ym;
       if(length2 <= 0.25) {
-	double const m2 = 64.0 * (0.25 - length2);
-	double const z = std::sqrt(m2 / 4.0 - m2 * length2) - 1.0;
+	double const z = 8.0 * (0.25 - length2) - 1.0;
 	double const angle = (std::acos(z) * 180.0 / M_PI) / 2.0;
 	bool color =
 	  static_cast<int>(std::floor(angle / isophote_width)) % 2 == 0;
