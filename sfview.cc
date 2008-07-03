@@ -18,7 +18,7 @@
 
 #include "sfview.hh"
 
-double version = 0.3;
+double version = 0.31;
 
 GLWindow window;
 

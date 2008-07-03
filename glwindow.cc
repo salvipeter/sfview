@@ -8,8 +8,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <fstream>
 #include <sstream>
+
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/construct.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include <GL/glut.h>
 
@@ -17,6 +22,9 @@
 #include "mesh-surface.hh"
 #include "nurbs-surface.hh"
 #include "utilities.hh"
+
+using namespace boost::lambda;
+using std::for_each;
 
 std::string const GLWindow::help_string =
   "Usage: sfview [OPTION]... FILE [FILE]...\n"
@@ -140,8 +148,7 @@ void GLWindow::show()
   glutMotionFunc(::mouseMotion);
   glutReshapeFunc(::reshape);
 
-  for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
-    (*i)->GLInit();
+  for_each(surfaces.begin(), surfaces.end(), bind(&Surface::GLInit, _1));
 
   glutMainLoop();
 }
@@ -160,6 +167,45 @@ void GLWindow::display()
 
   glFlush();
   glutSwapBuffers();
+}
+
+bool GLWindow::reloadActive()
+{
+  SurfacePVector old = surfaces;
+  surfaces.clear();
+  bool ok = true;
+  if(active != 0) {
+    std::string fname = surfaces[active-1]->fileName();
+    std::cout << "Reloading " << fname << "..." << std::endl;
+    if(loadFile(fname)) {
+      for_each(surfaces.begin(), surfaces.end(), bind(&Surface::GLInit, _1));
+      for(SurfacePIterator i = old.begin(); i != old.end();) {
+	if((*i)->fileName() == fname) {
+	  delete *i;
+	  i = old.erase(i); 
+	} else
+	  ++i;
+      }
+      surfaces.insert(surfaces.begin(), old.begin(), old.end());
+    } else
+      ok = false;
+  } else {
+    std::cout << "Reloading all surfaces..." << std::endl;
+    for(SurfacePIterator i = old.begin(); ok && i != old.end(); ++i) {
+      if(!loadFile((*i)->fileName()))
+	ok = false;
+    }
+    if(ok) {
+      for_each(old.begin(), old.end(), bind(delete_ptr(), _1));
+      for_each(surfaces.begin(), surfaces.end(), bind(&Surface::GLInit, _1));
+    }
+  }
+  if(!ok) {
+    for_each(surfaces.begin(), surfaces.end(), bind(delete_ptr(), _1));
+    surfaces = old;
+    return false;
+  }
+  return true;
 }
 
 void GLWindow::keyboard(unsigned char key, int x, int y)
@@ -239,26 +285,11 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
     display();
     break;
   case 'r' :
-    std::cout << "Reloading " << activeName(false) << "..." << std::endl;
-    if(active != 0) {
-      if(loadFile(surfaces[active-1]->fileName())) {
-	surfaces.back()->setVisualization(surfaces[active-1]->visualization());
-	delete surfaces[active-1];
-	surfaces[active-1] = surfaces.back();
-	surfaces.pop_back();
-      }
-    } else {
-      for(int i = 0, ie = surfaces.size(); i != ie; ++i) {
-	if(loadFile(surfaces[i]->fileName())) {
-	  surfaces.back()->setVisualization(surfaces[i]->visualization());
-	  delete surfaces[i];
-	  surfaces[i] = surfaces.back();
-	  surfaces.pop_back();
-	}
-      }
-    }
-    std::cout << "Reloading done." << std::endl;
-    display();
+    if(reloadActive()) {
+      std::cout << "Reloading done." << std::endl;  
+      display();
+    } else
+      std::cout << "Reloading failed." << std::endl;
     break;
   case 'w' :
     changeVisualization(WIREFRAME);
@@ -309,8 +340,7 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
     std::cout << "ok" << std::endl;
     break;
   case 'q' :
-    for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
-      delete *i;
+    for_each(surfaces.begin(), surfaces.end(), bind(delete_ptr(), _1));
     std::cout << "Bye!" << std::endl;
     exit(0);
   }

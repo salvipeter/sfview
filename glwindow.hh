@@ -23,6 +23,7 @@ public:
 private:
   StringVector parseCommandLine(int argc, char *argv[]);
   bool loadFile(std::string filename);
+  bool reloadActive();
   void zoomToBoundingBox();
   Point boundingBoxPoint(int i);
   void setClippingPlanes();
