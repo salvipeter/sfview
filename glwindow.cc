@@ -187,6 +187,7 @@ bool GLWindow::reloadActive()
 	  ++i;
       }
       surfaces.insert(surfaces.begin(), old.begin(), old.end());
+      active = old.size() + 1;
     } else
       ok = false;
   } else {

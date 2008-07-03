@@ -57,6 +57,7 @@ private:
   GLUnurbsObj *globj;
   GLuint mean_texture, gauss_texture, isophote_texture;
   static GLuint default_isophote_texture, slicing_texture;
+  static size_t isophote_users, slicing_users;
   GLfloat texknots_u[4], texknots_v[4];
   static int const texture_width_low, texture_height_low;
   static int const isophote_map_size, slicing_map_size;

@@ -18,6 +18,8 @@ int const NurbsSurface::isophote_map_size = 1024;
 int const NurbsSurface::slicing_map_size = 16;
 GLuint NurbsSurface::default_isophote_texture = 0;
 GLuint NurbsSurface::slicing_texture = 0;
+size_t NurbsSurface::isophote_users = 0;
+size_t NurbsSurface::slicing_users = 0;
 
 GLfloat NurbsSurface::texcpts[2][2][2] =
   { {{0.0, 0.0}, {0.0, 1.0}}, {{1.0, 0.0}, {1.0, 1.0}} };
@@ -141,16 +143,24 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
 
 NurbsSurface::~NurbsSurface()
 {
-  // default_isophote_texture and slicing_texture may be deleted
-  // multiple times, but that's OK.
-  glDeleteTextures(1, &default_isophote_texture);
-  glDeleteTextures(1, &isophote_texture);
+  --slicing_users;
+
+  if(isophote_texture == default_isophote_texture)
+    --isophote_users;
+  else
+    glDeleteTextures(1, &isophote_texture);
+
+  if(isophote_users == 0) {
+    glDeleteTextures(1, &default_isophote_texture);
+    default_isophote_texture = 0;
+  }
+  if(slicing_users == 0) {
+    slicing_texture = 0;
+  }
+
   glDeleteTextures(1, &gauss_texture);
   glDeleteTextures(1, &mean_texture);
   glDeleteTextures(1, &slicing_texture);
-  // Set these to 0 to be automatically regenerated when needed.
-  default_isophote_texture = 0;
-  slicing_texture = 0;
 }
 
 bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv,
@@ -338,9 +348,11 @@ void NurbsSurface::GLInit()
   if(default_isophote_texture == 0)
     generateIsophoteTexture(default_isophote_texture);
   isophote_texture = default_isophote_texture;
+  ++isophote_users;
 
   if(slicing_texture == 0)
     generateSlicingTexture();
+  ++slicing_users;
 
   generateEvaluatedTextures();
 
@@ -369,6 +381,8 @@ void NurbsSurface::increaseDensity()
     isophote_width /= 2.0;
     if(isophote_texture != default_isophote_texture)
       glDeleteTextures(1, &isophote_texture);
+    else
+      --isophote_users;
     generateIsophoteTexture(isophote_texture);
     break;
   default: ;
@@ -383,6 +397,8 @@ void NurbsSurface::decreaseDensity()
     isophote_width *= 2.0;
     if(isophote_texture != default_isophote_texture)
       glDeleteTextures(1, &isophote_texture);
+    else
+      --isophote_users;
     generateIsophoteTexture(isophote_texture);
     break;
   default: ;
