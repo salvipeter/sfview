@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <fstream>
 
+#include <boost/algorithm/string.hpp>
+
 #include "utilities.hh"
 
 #include "nurbs-surface.hh"
@@ -82,11 +84,11 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
   }
   while(!isCloseParen(in)) {
     in >> s;
-    if(s == ":degrees") {
+    if(boost::to_lower_copy(s) == ":degrees") {
       findOpenParen(in);
       in >> degree_u >> degree_v;
       isCloseParen(in);
-    } else if(s == ":knot-vectors") {
+    } else if(boost::to_lower_copy(s) == ":knot-vectors") {
       findOpenParen(in);
       findOpenParen(in);
       do {
@@ -99,7 +101,7 @@ NurbsSurface::NurbsSurface(std::ifstream &in) :
 	fknots_v.push_back(knots_v.back());
       } while(!isCloseParen(in));
       isCloseParen(in);
-    } else if(s == ":control-net") {
+    } else if(boost::to_lower_copy(s) == ":control-net") {
       findOpenParen(in);
       do {
 	++nu;
