@@ -42,7 +42,7 @@ private:
   double object_width;
   bool high_density;
   size_t active;
-  int mouse_start[2], next_id;
+  int mouse_start[2], next_id, base;
   enum MouseMode { NOTHING, ROTATION, ZOOM, PAN } mouse_mode;
   // Constants
   static std::string const help_string, copyright_string;

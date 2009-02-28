@@ -61,7 +61,7 @@ double const GLWindow::zfar_coefficient = 1.7;
 GLWindow::GLWindow() :
   width(800), height(600), texture_width(256), texture_height(256),
   max_n_of_quads(2500), high_density(false),
-  active(0), next_id(-1), mouse_mode(NOTHING)
+  active(0), next_id(-1), base(0), mouse_mode(NOTHING)
 {
 }
 
@@ -225,7 +225,8 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
   case '7' : // |
   case '8' : // |
   case '9' : // V
-    active = key - '0';
+    active = base + key - '0';
+    base = 0;
     if(active > surfaces.size())
       active = surfaces.size();
     std::cout << "Changing surface to: " << activeName(false) << std::endl;
@@ -237,6 +238,7 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
       display();
     }
     break;
+  case '!' : base += 10; break;
   case 'c' :
     if(active != 0)
       surfaces[active - 1]->toggleShowControlNet();
