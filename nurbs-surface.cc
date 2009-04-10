@@ -412,9 +412,18 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
 {
   if(show_control_net) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 0.0, 0.0);
     for(int i = 0; i < nu; ++i)
       for(int j = 0; j < nv; ++j) {
+	// Points
+	glColor3d(0.8, 0.0, 0.5);
+	glPointSize(6.0);
+	glBegin(GL_POINTS);
+	glVertex3d(control_net[i * nv + j][0],
+		   control_net[i * nv + j][1],
+		   control_net[i * nv + j][2]);
+	glEnd();
+	// Lines
+	glColor3d(0.0, 0.0, 0.0);
 	glLineWidth(2.0);
 	glBegin(GL_LINE_STRIP);
 	if(i != 0) {

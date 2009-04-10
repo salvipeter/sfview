@@ -48,7 +48,7 @@ std::string const GLWindow::help_string =
   "Report bugs to <vukung@yahoo.com>.";
 
 std::string const GLWindow::copyright_string =
-  "Copyright (C) 2007-2008 Peter Salvi <vukung@yahoo.com>\n"
+  "Copyright (C) 2007-2009 Peter Salvi <vukung@yahoo.com>\n"
   "sfview comes with NO WARRANTY, to the extent permitted by law.\n"
   "This is free software.  You may redistribute copies of it under the terms\n"
   "of the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n"
