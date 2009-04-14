@@ -12,14 +12,16 @@
 enum Visualization { SHADED, GAUSS, MEAN, ISOPHOTE,
 		     SLICING, WIREFRAME, POINTS };
 
+enum ControlNetType { CN_NONE, CN_LINES, CN_FULL, CN_BORDERS };
+
 class Surface {
 public:
   Surface() : vis(SHADED), isophote_width(5.0), hidden(false) { }
   virtual ~Surface() { }
   virtual void GLInit() { }
 
-  virtual bool showControlNet() const = 0;
-  virtual void toggleShowControlNet() = 0;
+  virtual ControlNetType showControlNet() const = 0;
+  virtual void toggleControlNet() = 0;
   std::string fileName() const { return filename; }
   Box boundingBox() const { return bounding_box; }
   Visualization visualization() const { return vis; }

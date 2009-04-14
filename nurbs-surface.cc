@@ -69,7 +69,7 @@ void NurbsSurface::ignoreWhitespaces(std::ifstream &in)
 }
 
 NurbsSurface::NurbsSurface(std::ifstream &in) :
-  Surface(), show_control_net(false), high_quality_textures(false)
+  Surface(), high_quality_textures(false), cn_vis(CN_NONE)
 {
   std::string s;
   float x, y, z;
@@ -187,6 +187,16 @@ bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv,
   in.close();
 
   return !error;
+}
+
+void NurbsSurface::toggleControlNet()
+{
+  switch(cn_vis) {
+  case CN_NONE:    cn_vis = CN_LINES;   break;
+  case CN_LINES:   cn_vis = CN_FULL;    break;
+  case CN_FULL:    cn_vis = CN_BORDERS; break;
+  case CN_BORDERS: cn_vis = CN_NONE;    break;
+  }
 }
 
 void NurbsSurface::texturePrologue(GLuint &name)
@@ -410,18 +420,20 @@ void NurbsSurface::decreaseDensity()
 void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
 			   bool high_density)
 {
-  if(show_control_net) {
+  if(cn_vis == CN_FULL || cn_vis == CN_LINES) {
     glDisable(GL_LIGHTING);
     for(int i = 0; i < nu; ++i)
       for(int j = 0; j < nv; ++j) {
-	// Points
-	glColor3d(0.8, 0.0, 0.5);
-	glPointSize(6.0);
-	glBegin(GL_POINTS);
-	glVertex3d(control_net[i * nv + j][0],
-		   control_net[i * nv + j][1],
-		   control_net[i * nv + j][2]);
-	glEnd();
+	if(cn_vis == CN_FULL) {
+	  // Points
+	  glColor3d(0.8, 0.0, 0.5);
+	  glPointSize(6.0);
+	  glBegin(GL_POINTS);
+	  glVertex3d(control_net[i * nv + j][0],
+		     control_net[i * nv + j][1],
+		     control_net[i * nv + j][2]);
+	  glEnd();
+	}
 	// Lines
 	glColor3d(0.0, 0.0, 0.0);
 	glLineWidth(2.0);
@@ -444,6 +456,34 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
 	}
 	glEnd();
       }
+  } else if(cn_vis == CN_BORDERS) {
+    glDisable(GL_LIGHTING);
+    glColor3d(0.0, 0.0, 0.0);
+    glLineWidth(2.0);
+    glBegin(GL_LINE_STRIP);
+    for(int i = 0; i < nu; ++i) {
+      Point &p = control_net[i * nv];
+      glVertex3d(p[0], p[1], p[2]);
+    }
+    glEnd();
+    glBegin(GL_LINE_STRIP);
+    for(int i = 0; i < nu; ++i) {
+      Point &p = control_net[i * nv + nv - 1];
+      glVertex3d(p[0], p[1], p[2]);
+    }
+    glEnd();
+    glBegin(GL_LINE_STRIP);
+    for(int j = 0; j < nv; ++j) {
+      Point &p = control_net[j];
+      glVertex3d(p[0], p[1], p[2]);
+    }
+    glEnd();
+    glBegin(GL_LINE_STRIP);
+    for(int j = 0; j < nv; ++j) {
+      Point &p = control_net[(nu-1) * nv + j];
+      glVertex3d(p[0], p[1], p[2]);
+    }
+    glEnd();
   }
 
   if(hidden)

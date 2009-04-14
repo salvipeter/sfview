@@ -6,7 +6,7 @@ sfview \- surface file viewer
 .RI [ OPTION "]\&... " FILE " [" FILE ]\&...
 .SH DESCRIPTION
 Loads the file(s) designated in the command line, displaying their
-contents in one common window. It recognizes the PTS an RBN file
+contents in one common window. It recognizes the PTS and RBN file
 formats.
 .TP
 .BI "\-g, \-\-geometry=" WIDTHxHEIGHT
@@ -37,7 +37,8 @@ program starts up. The commands that only apply to B-Spline surfaces
 or quadrilateral meshes are marked with [B] and [Q], respectively.
 .TP
 .B c
-Toggles the control net [B].
+Cycles the control net between the modes: None, Lines, Lines&Points,
+Borders [B].
 .TP
 .B g
 Changes the visualization of the surface to Gauss map.

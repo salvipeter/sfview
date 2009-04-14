@@ -14,8 +14,8 @@ public:
   MeshSurface(std::ifstream &in, size_t max_n_of_quads);
   static bool load(std::string const &filename, SurfacePVector &sv,
 		   size_t max_n_of_quads);
-  bool showControlNet() const { return false; }
-  void toggleShowControlNet() { }
+  ControlNetType showControlNet() const { return CN_NONE; }
+  void toggleControlNet() { }
   void setVisualization(Visualization const v) { vis = v; }
 
   void increaseDensity();

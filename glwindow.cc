@@ -29,7 +29,7 @@ using std::for_each;
 std::string const GLWindow::help_string =
   "Usage: sfview [OPTION]... FILE [FILE]...\n"
   "Loads the file(s) designated in the command line, displaying their\n"
-  "contents in one common window. It recognizes the PTS an RBN file formats."
+  "contents in one common window. It recognizes the PTS and RBN file formats."
   "\n\n"
   "Mandatory arguments to long options are mandatory for short options too.\n"
   "  -g, --geometry=WIDTHxHEIGHT\n"
@@ -241,10 +241,10 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
   case '!' : base += 10; break;
   case 'c' :
     if(active != 0)
-      surfaces[active - 1]->toggleShowControlNet();
+      surfaces[active - 1]->toggleControlNet();
     else
       for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
-	(*i)->toggleShowControlNet();
+	(*i)->toggleControlNet();
     std::cout << "Toggling control net for " << activeName(false) << std::endl;
     display();
     break;

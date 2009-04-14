@@ -18,8 +18,8 @@ public:
   static bool load(std::string const &filename, SurfacePVector &sv,
 		   int texwidth, int texheight);
   void GLInit();
-  bool showControlNet() const { return show_control_net; }
-  void toggleShowControlNet() { show_control_net = !show_control_net; }
+  ControlNetType showControlNet() const { return cn_vis; }
+  void toggleControlNet();
   void setVisualization(Visualization const v) {
     if(v != POINTS && v != WIREFRAME)
       vis = v;
@@ -53,7 +53,8 @@ private:
   std::vector<float> fknots_u, fknots_v, linear_cpts;
   int nu, nv;
   PointVector control_net;
-  bool show_control_net, high_quality_textures;
+  bool high_quality_textures;
+  ControlNetType cn_vis;
   GLUnurbsObj *globj;
   GLuint mean_texture, gauss_texture, isophote_texture;
   static GLuint default_isophote_texture, slicing_texture;
