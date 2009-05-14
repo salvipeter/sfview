@@ -4,7 +4,6 @@
 - Control net disappears when eye is inside the bounding box
 * Preserve settings at reload
 * Other input file formats (e.g. STL, IGES)
-* Other output file formats (e.g. PNG with transparent background)
 * Gauss/mean tuning
 - same min/max for multiple surfaces
 - show histogram and select min/max
