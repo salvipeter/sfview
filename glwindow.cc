@@ -18,6 +18,8 @@
 
 #include <GL/glut.h>
 
+#include <png.h>
+
 #include "sfview.hh"
 #include "mesh-surface.hh"
 #include "nurbs-surface.hh"
@@ -54,6 +56,7 @@ std::string const GLWindow::copyright_string =
   "of the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n"
   "For more information about these matters, see the files named COPYING.";
 
+double const background[] = { 0.7, 0.7, 0.7 };
 double const GLWindow::view_angle = 45.0; // field of view in the y direction
 double const GLWindow::znear_coefficient = 0.4;
 double const GLWindow::zfar_coefficient = 1.7;
@@ -132,7 +135,7 @@ void GLWindow::show()
 //   glMaterialfv(GL_BACK, GL_SPECULAR, specularMaterialBack);
 //   glMaterialfv(GL_BACK, GL_SHININESS, &shininessMaterialBack);
 
-  glClearColor(0.7, 0.7, 0.7, 1.0);
+  glClearColor(background[0], background[1], background[2], 1.0);
 
   Box b = surfaces.front()->boundingBox();
   for(SurfacePIterator i = surfaces.begin(); i != surfaces.end(); ++i)
@@ -336,11 +339,11 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
     display();
     break;
   case 's' :
-    str << "sfview-" << getpid() << next_id-- << ".ppm";
+    str << "sfview-" << getpid() << next_id-- << ".png";
     filename = str.str();
     std::cout << "Saving screenshot in " << filename << "..." << std::flush;
-    saveScreenShot(filename);
-    std::cout << "ok" << std::endl;
+    if(savePNGScreenShot(filename))
+      std::cout << "ok" << std::endl;
     break;
   case 'q' :
     for_each(surfaces.begin(), surfaces.end(), bind(delete_ptr(), _1));
@@ -593,7 +596,7 @@ void GLWindow::changeVisualization(Visualization v)
       (*i)->setVisualization(v);
 }
 
-void GLWindow::saveScreenShot(std::string filename)
+bool GLWindow::savePPMScreenShot(std::string filename)
 {
   std::vector<char> buffer;
   buffer.resize(width * height * 3);
@@ -601,6 +604,10 @@ void GLWindow::saveScreenShot(std::string filename)
   glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, &buffer[0]);
 
   std::ofstream f(filename.c_str());
+  if(f.fail()) {
+    std::cerr << "Unable to open `" << filename << "'." << std::endl;
+    return false;
+  }
   f << "P6" << std::endl;
   f << width << " " << height << " 255" << std::endl;
   for(int j = height - 1; j >= 0; --j)
@@ -610,4 +617,62 @@ void GLWindow::saveScreenShot(std::string filename)
 	<< buffer[3 * (j * width + i) + 2];
   f << std::endl;
   f.close();
+  return true;
+}
+
+bool GLWindow::savePNGScreenShot(std::string filename)
+{
+  // An interesting mix of C and C++...
+
+  std::vector<char> buffer;
+  buffer.resize(width * height * 4);
+
+  glClearColor(0, 0, 0, 0); display();  
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &buffer[0]);
+  glClearColor(background[0], background[1], background[2], 1.0); display();
+
+  FILE *fp = fopen(filename.c_str(), "wb");
+  if(!fp) {
+    std::cerr << "Unable to open `" << filename << "'." << std::endl;
+    return false;
+  }
+
+  png_structp png_ptr =
+    png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (!png_ptr) {
+    std::cerr << "Unable to create PNG write structure." << std::endl;
+    fclose(fp);
+    return false;
+  }
+
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+    std::cerr << "Unable to create PNG info structure." << std::endl;
+    fclose(fp);
+    return false;
+  }
+
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    std::cerr << "Unable to write PNG file." << std::endl;
+    fclose(fp);
+    return false;
+  }
+
+  png_init_io(png_ptr, fp);
+  png_set_compression_level(png_ptr, Z_BEST_COMPRESSION);
+  png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+	       PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+	       PNG_FILTER_TYPE_DEFAULT);
+
+  png_byte **row_pointers = new png_byte*[height];
+  for(int i = 0, index = (height-1)*width*4; i < height; ++i, index -= width*4)
+    row_pointers[i] = (png_byte *)&buffer[index];
+  png_set_rows(png_ptr, info_ptr, row_pointers);
+  png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+  delete[] row_pointers;
+
+  fclose(fp);
+  return true;
 }

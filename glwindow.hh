@@ -29,7 +29,8 @@ private:
   void setClippingPlanes();
   std::string activeName(bool capital);
   void changeVisualization(Visualization v);
-  void saveScreenShot(std::string filename);
+  bool savePPMScreenShot(std::string filename);
+  bool savePNGScreenShot(std::string filename);
 
   // Parameters
   int width, height, texture_width, texture_height;
