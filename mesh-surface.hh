@@ -24,7 +24,9 @@ public:
 private:
   void approximateNormalsAndCurvatures();
   void isophoteColor(Point const &p, Vector const &n, Point const &eye_pos);
-  void slicingColor(Point const &p, Point const &eye_pos,
+  void slicingColor(Point const &p, Point const &eye_pos, Vector const &eye_dir,
+		    int n, unsigned char const data[][3]);
+  void contourColor(Point const &p, Point const &eye_pos,
 		    Vector const &eye_dir);
   static void rainbowColor(double value, double min, double max);
 

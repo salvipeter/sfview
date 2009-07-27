@@ -138,7 +138,9 @@ MeshSurface::MeshSurface(std::ifstream &in, size_t max_n_of_quads) :
 void MeshSurface::increaseDensity()
 {
   switch(vis) {
-  case SLICING : slicing_density /= 2.0; break;
+  case SLICING :
+  case CONTOUR :
+    slicing_density /= 2.0; break;
   case ISOPHOTE : isophote_width /= 2.0; break;
   default: ;
   }
@@ -147,7 +149,9 @@ void MeshSurface::increaseDensity()
 void MeshSurface::decreaseDensity()
 {
   switch(vis) {
-  case SLICING : slicing_density *= 2.0; break;
+  case SLICING :
+  case CONTOUR :
+    slicing_density *= 2.0; break;
   case ISOPHOTE : isophote_width *= 2.0; break;
   default: ;
   }
@@ -164,12 +168,11 @@ void MeshSurface::isophoteColor(Point const &p, Vector const &n,
 }
 
 void MeshSurface::slicingColor(Point const &p, Point const &eye_pos,
-			       Vector const &eye_dir)
+			       Vector const &eye_dir, int n,
+			       unsigned char const data[][3])
 {
-  if((int)((p - Point(0, 0, 0)) * eye_dir / slicing_density) % 2 == 0)
-    glColor3d(1.0, 0.0, 0.0);
-  else
-    glColor3d(0.0, 0.0, 1.0);
+  int i = (int)((p - Point(0, 0, 0)) * eye_dir / slicing_density) % n;
+  glColor3d(data[i][0], data[i][1], data[i][2]);
 }
 
 void MeshSurface::rainbowColor(double value, double min, double max)
@@ -269,16 +272,32 @@ void MeshSurface::display(Point const &eye_pos, Vector const &eye_dir,
 	break;
       case SLICING :
 	glBegin(GL_QUADS);
-	slicingColor(p[i1], eye_pos, eye_dir);
+	slicingColor(p[i1], eye_pos, eye_dir, 2, slicing_data);
 	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
 	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
-	slicingColor(p[i2], eye_pos, eye_dir);
+	slicingColor(p[i2], eye_pos, eye_dir, 2, slicing_data);
 	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
 	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
-	slicingColor(p[i3], eye_pos, eye_dir);
+	slicingColor(p[i3], eye_pos, eye_dir, 2, slicing_data);
 	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
 	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
-	slicingColor(p[i4], eye_pos, eye_dir);
+	slicingColor(p[i4], eye_pos, eye_dir, 2, slicing_data);
+	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
+	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
+	glEnd();
+	break;
+      case CONTOUR :
+	glBegin(GL_QUADS);
+	slicingColor(p[i1], eye_pos, eye_dir, 8, contour_data);
+	glVertex3d(p[i1][0], p[i1][1], p[i1][2]);
+	glNormal3d(n[i1][0], n[i1][1], n[i1][2]);
+	slicingColor(p[i2], eye_pos, eye_dir, 8, contour_data);
+	glVertex3d(p[i2][0], p[i2][1], p[i2][2]);
+	glNormal3d(n[i2][0], n[i2][1], n[i2][2]);
+	slicingColor(p[i3], eye_pos, eye_dir, 8, contour_data);
+	glVertex3d(p[i3][0], p[i3][1], p[i3][2]);
+	glNormal3d(n[i3][0], n[i3][1], n[i3][2]);
+	slicingColor(p[i4], eye_pos, eye_dir, 8, contour_data);
 	glVertex3d(p[i4][0], p[i4][1], p[i4][2]);
 	glNormal3d(n[i4][0], n[i4][1], n[i4][2]);
 	glEnd();

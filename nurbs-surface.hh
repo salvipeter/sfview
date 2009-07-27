@@ -35,7 +35,8 @@ private:
   static void ignoreWhitespaces(std::ifstream &in);
   static void texturePrologue(GLuint &name);
   void generateIsophoteTexture(GLuint &name) const;
-  static void generateSlicingTexture();
+  static void generateSlicingTexture(int n, unsigned char const data[][3],
+				     GLuint &texture);
   static void fillRainbow(DoubleMatrix const &m, int w, int h,
 			  unsigned char *output);
   void generateEvaluatedTextures();
@@ -57,11 +58,11 @@ private:
   ControlNetType cn_vis;
   GLUnurbsObj *globj;
   GLuint mean_texture, gauss_texture, isophote_texture;
-  static GLuint default_isophote_texture, slicing_texture;
+  static GLuint default_isophote_texture, slicing_texture, contour_texture;
   static size_t isophote_users, slicing_users;
   GLfloat texknots_u[4], texknots_v[4];
   static int const texture_width_low, texture_height_low;
-  static int const isophote_map_size, slicing_map_size;
+  static int const isophote_map_size;
   static GLfloat texcpts[2][2][2];
 };
 

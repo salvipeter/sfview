@@ -10,7 +10,7 @@
 #include "common.hh"
 
 enum Visualization { SHADED, GAUSS, MEAN, ISOPHOTE,
-		     SLICING, WIREFRAME, POINTS };
+		     SLICING, CONTOUR, WIREFRAME, POINTS };
 
 enum ControlNetType { CN_NONE, CN_LINES, CN_FULL, CN_BORDERS };
 
@@ -42,6 +42,7 @@ protected:
   Visualization vis;
   double isophote_width, slicing_density;
   bool hidden, error;
+  static unsigned char const slicing_data[2][3], contour_data[8][3];
 };
 
 typedef std::vector<Surface *> SurfacePVector;

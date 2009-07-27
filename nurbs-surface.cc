@@ -17,12 +17,11 @@
 int const NurbsSurface::texture_width_low = 64;
 int const NurbsSurface::texture_height_low = 64;
 int const NurbsSurface::isophote_map_size = 1024;
-int const NurbsSurface::slicing_map_size = 16;
 GLuint NurbsSurface::default_isophote_texture = 0;
 GLuint NurbsSurface::slicing_texture = 0;
+GLuint NurbsSurface::contour_texture = 0;
 size_t NurbsSurface::isophote_users = 0;
 size_t NurbsSurface::slicing_users = 0;
-
 GLfloat NurbsSurface::texcpts[2][2][2] =
   { {{0.0, 0.0}, {0.0, 1.0}}, {{1.0, 0.0}, {1.0, 1.0}} };
 
@@ -158,11 +157,13 @@ NurbsSurface::~NurbsSurface()
   }
   if(slicing_users == 0) {
     slicing_texture = 0;
+    contour_texture = 0;
   }
 
   glDeleteTextures(1, &gauss_texture);
   glDeleteTextures(1, &mean_texture);
   glDeleteTextures(1, &slicing_texture);
+  glDeleteTextures(1, &contour_texture);
 }
 
 bool NurbsSurface::load(std::string const &filename, SurfacePVector &sv,
@@ -252,28 +253,19 @@ void NurbsSurface::generateIsophoteTexture(GLuint &name) const
   delete[] data;  
 }
 
-void NurbsSurface::generateSlicingTexture()
+void NurbsSurface::generateSlicingTexture(int n, unsigned char const data[][3],
+					  GLuint &texture)
 {
-  // Create a 1-dimensional map with its left half red, right half blue.
+  // Create a 1-dimensional map from a series of colors (in data).
   // This will be repeatedly used with the GL_OBJECT_LINEAR map, that
   // selects a position in the map according to the point's distance
   // from a reference plane (= the eye plane in our case).
-  int const &w = slicing_map_size;
-  unsigned char *data = new unsigned char[w * 3];
-  glGenTextures(1, &slicing_texture);
-  glBindTexture(GL_TEXTURE_1D, slicing_texture);
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-  glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  int index = 0;
-  for(int i = 0; i < w; ++i) {
-    bool color = i < w/2;
-    data[index++] = color ? 255 : 0;
-    data[index++] = 0;
-    data[index++] = color ? 0 : 255;
-  }
-  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, w, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_1D, texture);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, n, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 }
 
 void NurbsSurface::fillRainbow(DoubleMatrix const &m, int w, int h,
@@ -362,8 +354,10 @@ void NurbsSurface::GLInit()
   isophote_texture = default_isophote_texture;
   ++isophote_users;
 
-  if(slicing_texture == 0)
-    generateSlicingTexture();
+  if(slicing_texture == 0) {
+    generateSlicingTexture(2, slicing_data, slicing_texture);
+    generateSlicingTexture(8, contour_data, contour_texture);
+  }
   ++slicing_users;
 
   generateEvaluatedTextures();
@@ -388,7 +382,9 @@ void NurbsSurface::calculateLargeMaps()
 void NurbsSurface::increaseDensity()
 {
   switch(vis) {
-  case SLICING: slicing_density /= 2.0; break;
+  case SLICING:
+  case CONTOUR:
+    slicing_density /= 2.0; break;
   case ISOPHOTE:
     isophote_width /= 2.0;
     if(isophote_texture != default_isophote_texture)
@@ -404,7 +400,9 @@ void NurbsSurface::increaseDensity()
 void NurbsSurface::decreaseDensity()
 {
   switch(vis) {
-  case SLICING: slicing_density *= 2.0; break;
+  case SLICING:
+  case CONTOUR:
+    slicing_density *= 2.0; break;
   case ISOPHOTE:
     isophote_width *= 2.0;
     if(isophote_texture != default_isophote_texture)
@@ -513,6 +511,7 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
     glBindTexture(GL_TEXTURE_2D, isophote_texture);
     break;
   case SLICING:
+  case CONTOUR:
     glEnable(GL_TEXTURE_1D);
     glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
     plane[0] = eye_dir[0] / slicing_density;
@@ -521,7 +520,8 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
     plane[3] = -(eye_dir * (eye_pos - Point(0.0, 0.0, 0.0)));
     glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
     glEnable(GL_TEXTURE_GEN_S);
-    glBindTexture(GL_TEXTURE_1D, slicing_texture);
+    glBindTexture(GL_TEXTURE_1D,
+		  vis == SLICING ? slicing_texture : contour_texture);
     break;
   default: ;
   }
@@ -555,6 +555,7 @@ void NurbsSurface::display(Point const &eye_pos, Vector const &eye_dir,
     glDisable(GL_TEXTURE_2D);
     break;
   case SLICING:
+  case CONTOUR:
     glDisable(GL_TEXTURE_GEN_S);
     glDisable(GL_TEXTURE_1D);
   default: ;

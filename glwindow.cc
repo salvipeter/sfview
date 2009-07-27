@@ -270,6 +270,11 @@ void GLWindow::keyboard(unsigned char key, int x, int y)
     std::cout << activeName(true) << ": isophote map" << std::endl;
     display();
     break;
+  case 'k' :
+    changeVisualization(CONTOUR);
+    std::cout << activeName(true) << ": contour-style multicolor slicing map" << std::endl;
+    display();
+    break;
   case 'l' :
     changeVisualization(SLICING);
     std::cout << activeName(true) << ": slicing map" << std::endl;

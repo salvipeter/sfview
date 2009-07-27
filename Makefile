@@ -2,7 +2,8 @@ TARGETS=sfview sfview.html sfview.ps TAGS
 
 all: $(TARGETS)
 
-SOURCES=sfview.cc glwindow.cc utilities.cc mesh-surface.cc nurbs-surface.cc
+SOURCES=sfview.cc glwindow.cc utilities.cc surface.cc \
+        mesh-surface.cc nurbs-surface.cc
 
 OBJECTS=$(subst .cc,.o,$(SOURCES))
 
