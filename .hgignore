@@ -1,0 +1,11 @@
+syntax: glob
+
+*~
+*.o
+*.d
+*.rbn
+*.pts
+TAGS
+sfview
+sfview.html
+sfview.ps
