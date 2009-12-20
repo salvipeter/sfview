@@ -632,7 +632,7 @@ bool GLWindow::savePNGScreenShot(std::string filename)
   std::vector<char> buffer;
   buffer.resize(width * height * 4);
 
-  glClearColor(0, 0, 0, 0); display();  
+  glClearColor(1.0, 0.0, 1.0, 0.0); display();  
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &buffer[0]);
   glClearColor(background[0], background[1], background[2], 1.0); display();
 
