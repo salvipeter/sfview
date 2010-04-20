@@ -479,7 +479,8 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
 	  "the format WIDTHxHEIGHT." << std::endl;
 	exit(2);
       } else
-	std::cout << "Texture size: " << width << "x" << height << std::endl;
+	std::cout << "Texture size: "
+		  << texture_width << "x" << texture_height << std::endl;
       break;
     case 'v' :
       std::cout << "SFView " << version << std::endl;
