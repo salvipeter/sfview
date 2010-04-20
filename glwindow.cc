@@ -437,7 +437,8 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
   };
 
   std::string geom;
-  int c, index;
+  std::string::size_type index;
+  int c;
 
   while((c = getopt_long(argc, argv, "g:hq:t:v", long_options, NULL)) != -1) {
     switch(c) {
@@ -446,7 +447,7 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
       index = geom.find('x');
       width = std::atoi(geom.substr(0, index).c_str());
       height = std::atoi(geom.substr(index + 1).c_str());
-      if(width <= 0 || height <= 0) {
+      if(index == std::string::npos || width <= 0 || height <= 0) {
 	std::cerr << argv[0] << ": geometry should be of "
 	  "the format WIDTHxHEIGHT." << std::endl;
 	exit(2);
@@ -472,7 +473,8 @@ StringVector GLWindow::parseCommandLine(int argc, char *argv[])
       index = geom.find('x');
       texture_width = std::atoi(geom.substr(0, index).c_str());
       texture_height = std::atoi(geom.substr(index + 1).c_str());
-      if(texture_width <= 0 || texture_height <= 0) {
+      if(index == std::string::npos ||
+	 texture_width <= 0 || texture_height <= 0) {
 	std::cerr << argv[0] << ": texture size should be of "
 	  "the format WIDTHxHEIGHT." << std::endl;
 	exit(2);
