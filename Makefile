@@ -11,7 +11,7 @@ DEPENDENCIES=$(subst .cc,.d,$(SOURCES))
 
 CXXFLAGS=-g -Wall
 
-LDFLAGS=-lglut -lpng
+LDFLAGS=-lm -lGL -lGLU -lglut -lpng
 
 sfview: $(OBJECTS)
 

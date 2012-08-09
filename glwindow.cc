@@ -19,6 +19,7 @@
 #include <GL/glut.h>
 
 #include <png.h>
+#include <zlib.h>
 
 #include "sfview.hh"
 #include "mesh-surface.hh"
@@ -87,9 +88,9 @@ void GLWindow::init(int argc, char *argv[])
 
 void GLWindow::show()
 {
-  int argc = 1;			// dummy arguments
-  char *argv[] = { "sfview" };	//  for glutInit
-  glutInit(&argc, argv);
+  int argc = 1;	         		// dummy arguments
+  char const argv[] = { "sfview" };	//  for glutInit
+  glutInit(&argc, (char**)&argv);
   glutInitWindowSize(width, height);
   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
   glutCreateWindow("SFView");
